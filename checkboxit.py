@@ -19,13 +19,13 @@ C2 = Checkbutton(top, text = "Videoita ", variable = CheckVar2, \
                  width = 16, activebackground = 'lightgreen')
 C3 = Checkbutton(top, text = "Facebook ", variable = CheckVar3, \
                  onvalue = 1, offvalue = 0, height=2, \
-                 width = 16, activebackground = 'lightblue')
+                 width = 16, activebackground = 'lightblue', bg = 'green')
 C4 = Checkbutton(top, text = "Grillimakkaraa", variable = CheckVar4, \
                  onvalue = 1, offvalue = 0, height=2, \
-                 width = 16, activebackground = 'pink')
+                 width = 16, activebackground = 'pink', bg = 'yellow')
 
-C1.pack()
-C2.pack()
+C1.pack(fill=X)
+C2.pack(fill=X)
 C3.pack()
 C4.pack()
 top.mainloop()
