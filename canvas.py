@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import Tkinter
 import tkMessageBox
 
