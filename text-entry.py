@@ -1,3 +1,5 @@
+# http://www.tutorialspoint.com/python/tk_entry.htm
+
 from Tkinter import *
 import tkMessageBox
 
@@ -16,8 +18,5 @@ L1.pack( side = LEFT)
 E1 = Entry(top, bd =5)
 E1.pack(side = RIGHT)
 E1.insert(0, "User name")
-#b = Button(top, text="get", command=callback)
-#b.pack(side = TOP)
 
 top.mainloop()
-# http://www.tutorialspoint.com/python/tk_entry.htm
