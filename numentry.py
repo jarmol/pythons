@@ -1,9 +1,10 @@
 from Tkinter import *
 from PIL import Image, ImageTk
-import datetime
+import time
 
 def cdegtofdeg():
-    content3.set(datetime.datetime.now())
+    s = time.strftime("%d.%m.%Y %T",time.localtime())
+    content3.set(s)
     text = content.get()
     try:
         if text:
@@ -15,7 +16,7 @@ def cdegtofdeg():
 
 root = Tk()
 root.geometry("250x300+200+200")
-root.title("Python Background Image")
+root.title("Numeric entries")
 wi = 240 
 w = Canvas(root, width=300, height=300)
 
@@ -33,7 +34,7 @@ botframe = Frame(root).place(rely=0.2, relheight=0.1, relwidth=1)
 
 Label(topframe, text="C degr", fg="red").place(relx=0, rely=0, relwidth=0.25)
 Label(midframe, text="F degr", fg="red").place(relx=0, rely=0.1, relwidth=0.25)
-Label(botframe, text="Time", fg="red").place(relx=0, rely=0.2, relwidth=0.25)
+Label(botframe, text="Local time", fg="red").place(relx=0, rely=0.2, relwidth=0.25)
 
 content = StringVar()
 content.set("12.34")
