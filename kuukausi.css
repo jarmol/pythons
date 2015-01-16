@@ -1,0 +1,18 @@
+table.month, th, td {
+    border-spacing: 2px;
+    border: 1px solid black;
+    color: black;
+}
+
+th, td {
+    border: 1px solid black;
+    padding: 10px;
+}
+
+th.month {
+    color: blue;
+}
+
+th.sun, td.sun { 
+    color: red;
+}
