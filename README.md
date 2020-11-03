@@ -3,14 +3,23 @@ New Python3 stuff
 
 I have composed the new version of my old favorite suncalculator, this time all in Python 3 language.
 
-First, extract the files of the package sunpos.tar.gz to your project folder with any name.
+First, extract the files of the package sunpos.tar.gz to your project folder with any name:
+```bash
+   tar -xf sunpos.tar.gz
+```
 
-Before running it, you have to install Flask web framework, see instructions in https://flask.palletsprojects.com/en/1.1.x/
+Before running it, you have to install <b>Flask</b> web framework, see instructions in https://flask.palletsprojects.com/en/1.1.x
+
+Do activate the virtual environment:
+```bash
+source ./env/bin/activate
+```
 
 Run the python file in virtual environment:
-
+```bash
    python isotime.py
-   
+```
+
 Open in the browser http://localhost:5000/sunpos
 
 Enter the optional Calculation Date and Time into the form.
