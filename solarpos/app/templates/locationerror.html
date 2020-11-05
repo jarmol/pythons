@@ -1,0 +1,33 @@
+<h1>Location Errors</h1>
+
+ Latitude: {{lat}}° Longitude: {{lon}}° Timezone: UTC + {{tz}}
+ 
+ {% if (lat < -90) %}
+    <h4>Latitude error</h4>
+    Latitude {{lat}}° less than -90° 
+ {% endif %}
+
+ {% if (lat > 90) %}
+    <h4>Latitude error</h4>
+    Latitude {{lat}}° greater than +90°
+ {% endif %}
+ 
+ {% if (lon < -180) %}
+    <h4>Longitude error</h4>
+    Longitude {{lon}}° less than -180° 
+ {% endif %}
+ 
+ {% if (lon > 180) %}
+    <h4>Longitude error</h4>
+    Longitude {{lon}}° greater than +180°
+ {% endif %}
+
+ {% if (tz < -12) %}
+    <h4>Timezone error</h4>
+    Timezone {{tz}} h is less than -12 h
+ {% endif %}
+
+ {% if (tz > 12) %}
+    <h4>Timezone error</h4>
+    Timezone {{tz}} h is greater than +12 h
+ {% endif %}
