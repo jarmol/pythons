@@ -15,9 +15,10 @@ Do activate the virtual environment:
 source ./env/bin/activate
 ```
 
-Run the python file in virtual environment:
+Run the python file in virtual environment debug mode:
 ```bash
-   python isotime.py
+   cd solarpos/app
+   python sunpos.py
 ```
 
 Open in the browser http://localhost:5000/sunpos
