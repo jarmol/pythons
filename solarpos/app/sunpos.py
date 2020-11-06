@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for
+#from forms import ContactForm
 #from jinja2 import Template
 from werkzeug.datastructures import MultiDict
 import os
@@ -16,11 +17,11 @@ app.config['SECRET_KEY'] = 'vanha_varis_vaakkui'
 
 @app.route('/')
 def index():
-        msg = """ 
+        msg = """
         Something exceptional in values.\n
         Check values of latitude, longitude and timezone
         """
-        return msg 
+        return msg
 
 @app.route('/sunpos/', methods=['post', 'get'])
 def location():
@@ -29,15 +30,14 @@ def location():
         gmd = gmtime()
         dl =[gmd.tm_year, gmd.tm_mon, gmd.tm_mday]
         return dl[i]
-        
- 
-     def jdncalc(day, month, year):
-        Y = year; M = month; D = day 
+
+    def jdncalc(day, month, year):
+        Y = year; M = month; D = day
         a = (14 - M)//12
-        y = Y + 4800 - a 
-        m = M + 12*a - 3 
+        y = Y + 4800 - a
+        m = M + 12*a - 3
         JDN = D + (153*m + 2)//5 + 365*y + y//4 - y//100 + y//400 - 32045
-        return JDN 
+        return JDN
 
     def jdcalc(jdn, hr, mn, sc):
         jd = jdn + (hr - 12)/24 + mn/1440 + sc/86400
@@ -89,7 +89,7 @@ def location():
         jdn = jdncalc(ymd(2), ymd(1), ymd(0))
 
     jd = jdcalc(jdn, hour, minute, second)
-    
+
 
     def jcentcalc(h0, m0, s0):
         jday = jdcalc(jdn, h0, m0, s0)
@@ -117,8 +117,7 @@ def location():
         x = a + cent * (b + cent * c)
         return math.fmod(x, 360)
 
-    # Eccentricy of Earth Orbit
-
+# Eccentricy of Earth Orbit
 
     def calcEccentrEO(cent):
        x = 0.016708634 - cent * (4.2037e-5 + 1.267e-7 * cent)
@@ -149,9 +148,10 @@ def location():
 
     calcSunTrueAnom = lambda cent: calcAnomalSun(cent) + calcSunEqCntr(cent)
 
+    #Sun true longitude
     calcTrueLongSun = lambda cent: calcSunML(cent) + calcSunEqCntr(cent)
 
-    # -- Sun apparent longitude, OK tested 22.10.19
+    #-- Sun apparent longitude, OK tested 22.10.19
 
     def calcAppLongSun(cent):
         y = calcTrueLongSun(cent) - 5.69e-3\
@@ -167,7 +167,7 @@ def location():
         return y
 
 
-    # -- Corrected obliquity
+    #-- Corrected obliquity
 
     def calcObliqCorr(cent):
         y = calcMeanObliqEcl(cent) + 0.00256 * cosDeg (125.04 - 1934.136 * cent)
@@ -246,7 +246,6 @@ def location():
 
         else: z = acosDeg(x)
 
-
         return z
 
 
@@ -259,11 +258,11 @@ def location():
 
 
     # -- Sunrise in minutes, option = -1
-    # -- Sunset  in minutes, option = +1
+    #-- Sunset  in minutes, option = +1
 
-    def calcRiSetMins(cent, geoLong, geoLat, timeZone, rsOption):
+    def calcRiSetMins(cent, geoLong, geoLat, timeZone, zenith, rsOption):
         noonTime = getNoon(cent, geoLong, timeZone)
-        zenith = 90.833    # in degrees for Sunrise and Sunset
+        #zenith = 90.833    # in degrees for Sunrise and Sunset
         srHA = getHA(cent, geoLat, zenith)
         return noonTime + 4.0 * rsOption * srHA
 
@@ -306,7 +305,6 @@ def location():
     def sunAltitude(cent, geoLat, geoLong, tz):
         zen = solZenith(cent, geoLat, geoLong, tz)
         return 90.0 - zen
-
 
 
     # Max Altitude at Noon: 90 + Sun Declination - gegraphic Latitude
@@ -405,10 +403,14 @@ def location():
             gHoursDL = time_to_hrmnsc(60*8*srHA)
             noonTime = getNoon(jcent, lon, tz)
             gNoonTime   = time_to_hrmnsc(60*noonTime)
-            riseTime    = calcRiSetMins(jcent, lon, lat, tz, -1)
-            sunsetTime  = calcRiSetMins(jcent, lon, lat, tz, 1)
+            riseCivilTwil    = calcRiSetMins(jcent, lon, lat, tz, 96.0, -1)
+            riseTime    = calcRiSetMins(jcent, lon, lat, tz, 90.83, -1)
+            sunsetTime  = calcRiSetMins(jcent, lon, lat, tz, 90.83, 1)
+            setCivilTwil  = calcRiSetMins(jcent, lon, lat, tz, 96.0, 1)
+            gRiseCivTwl   = time_to_hrmnsc(60*riseCivilTwil)
             gRiseTime   = time_to_hrmnsc(60*riseTime)
             gSunsetTime = time_to_hrmnsc(60*sunsetTime)
+            gSetCivTwl  = time_to_hrmnsc(60*setCivilTwil)
             trueST   = trueSolTime(jcent, lon, tz)
             hrAngle  = hourAngle(jcent, lon, tz)
             current_zenith = solZenith(jcent, lat, lon, tz)
@@ -427,7 +429,7 @@ def location():
             fMaxCorrEl = f"{maxCorrEl:6.4f}"
 
         else:
-           if tz > 12: print("Error: timezone > 12?", TZ)
+            if tz > 12: print("Error: timezone > 12?", TZ)
             if abs(lat) >  90: print("Error: latitude < -90 or > +90", lat)
             if abs(lon) > 180: print("Error: longitude < -180 or > 180", lon)
             error_context = dict(tz = tz, lat = lat, lon = lon)
@@ -450,16 +452,17 @@ def location():
             msg1 = msg1, msg2 = msg2, TZ = TZ, calcdate = calcdate,
             gHoursDL = gHoursDL, gNoonTime = gNoonTime,
             gRiseTime = gRiseTime, gSunsetTime = gSunsetTime,
+            gRiseCivTwl = gRiseCivTwl,
+            gSetCivTwl     = gSetCivTwl,
             fTrueST = fTrueST, fHRangle = fHRangle, fMaxAlt = fMaxAlt,
             fSunAlt = fSunAlt, fZenith = fZenith, fSunAzim = fSunAzim,
             fCorrectElevation = fCorrectElevation,
             fMaxCorrEl = fMaxCorrEl )
 
-
         template_context.update(template_context2)
 
     return render_template('public/isotime.html', **template_context)
 
-
 if __name__ == "__main__":
     app.run(debug=True)
+
