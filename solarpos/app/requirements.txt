@@ -10,7 +10,7 @@ Flask-Script==2.0.6
 Flask-WTF==0.14.3
 idna==2.10
 itsdangerous==1.1.0
-Jinja2==2.11.2
+Jinja2==2.11.3
 Js2Py==0.70
 kiwisolver==1.2.0
 MarkupSafe==1.1.1
