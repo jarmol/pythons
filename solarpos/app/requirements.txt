@@ -15,7 +15,7 @@ Js2Py==0.70
 kiwisolver==1.2.0
 MarkupSafe==1.1.1
 matplotlib==3.3.2
-numpy==1.19.2
+numpy==1.22.0
 Pillow==7.2.0
 pipdeptree==1.0.0
 pyjsparser==2.7.1
