@@ -14,13 +14,6 @@ def jdn_from_date(yr, mnt, day) :
 
 jdn = jdn_from_date(y, m, d_)
 
-"""
-# alternative method
-wd = ["Monday","Tuesday","Wedneaday","Thursday","Friday","Saturday","Sunday"]
-week_day = jdn % 7
-print("weekday", wd[week_day])
-"""
-
 print("Julian Day Number JDN", jdn)
 print("year",y,"month",m,"day",d_)
 
@@ -40,12 +33,7 @@ utc_hours = dsecs // 3600
 print("Hours of current UTC time", utc_hours)
 
 tz_offset = utc_hours - d.hour
-jd_afternoon = jdn + 0.5 + (hr + tz_offset) / 24 + mn / 60 / 24 + sc / 3600 / 24
-jd_morning = jdn - 0.5 + (hr + tz_offset) / 24 + mn / 60 / 24 + sc / 3600 / 24
-print("JD morning", jd_morning)
-print("JD afternoon", jd_afternoon)
-
-print(f"Timezone Offset {tz_offset} hours")
+print(f"Timezone Offset {tz_offset} hours from UTC")
 
 # Local time 
 x = datetime.datetime(y, m, d_, hr, mn, sc)
@@ -54,3 +42,22 @@ print("Local time:", x.strftime("%A, %Y-%m-%d %H:%M:%S"), f"UTC {-tz_offset} h")
 # UTC Time
 ut = datetime.datetime(y, m, d_, hr + int(tz_offset), mn, sc) # UTC time
 print("UTC time:  ", ut.strftime("%A, %Y-%m-%d %H:%M:%S"))
+
+jd_afternoon = jdn + (hr + tz_offset - 12) / 24 + mn / 60 / 24 + sc / 3600 / 24
+jd_morning = jdn - 0.5 + (hr + tz_offset) / 24 + mn / 60 / 24 + sc / 3600 / 24
+
+jd_selected = jd_morning if (utc_hours < 12) else jd_afternoon
+
+print("Selected JD", round(jd_selected,6))
+# You can check the calculation with online JD calculators
+# Example : https://www.aavso.org/jd-calculator
+# https://ssd.jpl.nasa.gov/tools/jdc/#/jd_calculator
+# We can also use astropy to verify the result
+# from astropy.time import Time
+# t = Time(x, scale='utc')
+# print("Astropy JD", round(t.jd,6))
+
+# Next we continue with calculating the solar position for given location and time
+# using NOAA solar model, see https://gml.noaa.gov/grad/solcalc/solareqns.PDF
+# The required functions are translated manually from the NOAA's spreadsheet
+# and attached in the file noaa-solar.py
