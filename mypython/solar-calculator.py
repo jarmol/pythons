@@ -57,6 +57,15 @@ if tz_offset > 12:
 if tz_offset < -12:
     tz_offset += 12
 
+# NEW: Show the sign (+/-) of timezone offset correctly
+# Note, the sign is inverted when showing UTC offset
+tz_sign = ''
+
+if tz_offset >= 0:
+    tz_sign = '-'
+else :
+    tz_sign = '+'
+
 # NOTE Also the date must be corrected: keep yesterday for for east from Greenwich (tz_offset < 0)
 # Not corrected in this version!
 
@@ -64,7 +73,7 @@ print(f"Timezone Offset {tz_offset} hours from UTC")
 
 # Local time 
 x = datetime.datetime(y, m, d_, hr, mn, sc)
-print("Local time:", x.strftime("%A, %Y-%m-%d %H:%M:%S"), f"UTC {-tz_offset} h")
+print("Local time:", x.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {tz_sign}{abs(tz_offset)} h")
 
 # UTC Time
 ut = datetime.datetime(y, m, d_, hr + int(tz_offset), mn, sc) # UTC time
@@ -94,35 +103,61 @@ print("Selected JD", round(jd_selected,6))
 # As the latest epoch is J2000.0 at JD 2451545.0, it is the starting point for
 # solar functions depending on time.
 def julian_century(jd):
-    """Calculate Julian Century from Julian Day"""
+# "Calculate Julian Century from Julian Day
     jc = (jd - 2451545.0) / 36525.0
     return jc
 
-jc = julian_century(jd_selected)
+jc = julian_century(jd_selected) # tested 2026-01-20 12:34:53 OK
 print("Julian Century JC", round(jc,8))
 
-# NOTE: INCORRECT TIMEZONE OFFSET AS LOCAL TIME IS OVER 24:00
-# NEEDS TO ADJUST THE DATE AND JD ACCORDINGLY
-# THIS WILL BE FIXED IN THE NEXT VERSION
-# Output was following when local time was 2024-06-30 25:15:30
+# NOTE: INCORRECT TIMEZONE OFFSET AS LOCAL TIME WAS OVER 24:00
+# Corrections made in this version, but not yet tested fully 
+# Output was following when local time was 2026-01-20 14:34:00
 """
-Current local time 2026-01-20 01:08:15
+Current local time 2026-01-20 14:34:00
 Julian Day Number JDN 2461061
 year 2026 month 1 day 20
-Epoch seconds 1768864095.0
-Current time seconds part 15.0
-Epoch (1970-01-01) posix daynumber 20472.0
-remaining of today 83295.0 sec
-Hours of current UTC time 23.0
-Timezone Offset 22.0 hours from UTC
-# INCORRECT: (utc - local) = (23 - 01) h = 22 h, should be -2h
-Local time: Tuesday, 2026-01-20 01:08:15 UTC -22.0 h 
-# INCORRECT timezone offset +22 h, needs to be -2 h
-UTC time:   Tuesday, 2026-01-20 23:08:15 " 
-# Correct utc-hour 23, INCORRECT day 01-20 and weekday 'Tuesday',
-# needs to be 'Monday 19th' because UTC-hour is still less than 24
+Epoch seconds 1768912440.0
+Current time seconds part 0.0
+Epoch (1970-01-01) posix daynumber 20473.0
+remaining of today 45240.0 sec
+Hours of current UTC time 12.0
+Timezone Offset -2.0 hours from UTC
+Local time: Tuesday, 2026-01-20 14:34:00 Timezone UTC +2.0 h " # Ok for tested time 
+UTC time:   Tuesday, 2026-01-20 12:34:00 # Ok for tested time
+Selected JD 2461061.023611    # tested OK
+Julian Century JC 0.26053453  # tested OK
+Geometric Mean Longitude of the Sun (degrees) 299.910032 # tested OK
 """
 
-# Selected JD 2461061.464063   
-# NOTE correct value inspite of incorrect utc-offset
-# Julian Century JC 0.26054659
+# Test to do, utc-hour 23, INCORRECT day 01-20 and weekday 'Tuesday',
+# needs to be 'Monday 19th' because UTC-hour is still less than 24
+  
+
+def geom_mean_long_sun(jc):
+    """Calculate the Geometric Mean Longitude of the Sun (in degrees)"""
+    gmls = 280.46646 + jc * (36000.76983 + jc * 0.0003032)
+   
+    # More elegant way to keep angle within 0-360 degrees
+    gmls = gmls % 360.0
+    return gmls
+gmls = geom_mean_long_sun(jc)
+print("Geometric Mean Longitude of the Sun (degrees)", round(gmls,6))
+# Tested OK , gmls = 299,910032 for 2026-01-20 12:34 UTC
+
+def geom_mean_anom_sun(jc):
+    """Calculate the Geometric Mean Anomaly of the Sun (in degrees)"""
+    gmas = 357.52911 + jc * (35999.05029 - 0.0001537 * jc)
+    return (gmas % 360.0)
+
+gmas = geom_mean_anom_sun(jc)
+print("Geometric Mean Anomaly of the Sun (degrees)", round(gmas,6))
+# Tested OK , gmas = 16.755903 for 2026-01-20 18:11:52 UTC
+
+def eccent_earth_orbit(jc):
+    """Calculate the eccentricity of Earth's orbit"""
+    eoe = 0.016708634 - jc * (0.000042037 + 0.0000001267 * jc)
+    return eoe
+eoe = eccent_earth_orbit(jc)
+print("Eccentricity of Earth's orbit", round(eoe,8))
+# Tested OK , eoe = 0.016698 for 2026-01-20 18:21:18 UTC
