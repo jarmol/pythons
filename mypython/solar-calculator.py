@@ -1,28 +1,35 @@
 # We are building a new version of solar calculator using Python
 # First we need to convert the current local time to Julian Day (JD)
-# The JD calculation is based on the algorithm from
+# The solar astronomic calculation is based on the algorithm from
 # "Astronomical Algorithms" by Jean Meeus, 1991
-# Chapter 7, page 61, formula 7.1
-# However, I don't use libraries like astropy to do the conversion
-# to keep the code self-contained and easy to understand
-# I have i fact studied the solar functions presented in the spreadsheet of 
-# NOAA solar calculator in libreoffice format and translated them to Python functions
-# The algorithm should work for all Gregorian dates after 1582-10-15
-# The JD starts at noon UTC, so we need to adjust the time accordingly
-# We also calculate the timezone offset from UTC
+# However, I don't use libraries like astropy to keep the code self-
+# contained and easy to understand. I have in fact studied the solar
+# functions presented in the spreadsheet of NOAA solar calculator in
+# libreoffice format and translated them to Python functions.
+# The solar model is compatible to epoch 2000, thus the accuracy of
+# results is expected be best from epoch start 2000-01-01.
 
 import time, datetime
+from math import pi, sin, asin, cos, tan, acos
+
 d = datetime.datetime.now()
 print("Current local time", d.strftime("%Y-%m-%d %H:%M:%S"))
 y, m, d_ = d.year, d.month, d.day
 hr,mn,sc = d.hour, d.minute, d.second
+
+longitude =  input("Enter your longitude in degrees (east +, west -): ") or  "24.18"
+longitude = float(longitude)
+
+latitude = input("Enter your latitude in degrees (north +, south -): ") or "65.85"
+latitude = float(latitude)
+
+print("Location:", "latitude", latitude, "longitude", longitude)
 
 def jdn_from_date(yr, mnt, day) :
     result = 367*yr - 7*(yr + (mnt + 9)//12)//4 \
     - 3*((yr + (mnt - 9)//7)//100 + 1)//4 \
     + 275*mnt//9 + day + 1721029
     return(result)
-
 
 jdn = jdn_from_date(y, m, d_)
 
@@ -41,22 +48,10 @@ print("Epoch (1970-01-01) posix daynumber", days)
 dsecs = tposix % tday
 print(f"remaining of today {dsecs} sec")
 
-utc_hours = dsecs // 3600
+utc_hours = int(dsecs // 3600)
 print("Hours of current UTC time", utc_hours)
 
-tz_offset = utc_hours - d.hour
-# Needs correction as utc offset cannot be less than -12 h or more than +12 h
-# If local time is 00:00:00 to 01:00:00 an timezone +2h, offset should be -2 h
-# Correction: if tz_offset > 12 then tz_offset = tz_offset - 24
-# respectively for positive offset (west from Greenwich) 
-# If local time is tz_offset < -12 then tz_offset = tz_offset + 24
-# Combined both conditions results:
-if tz_offset > 12:
-    tz_offset -= 12
-
-if tz_offset < -12:
-    tz_offset += 12
-
+tz_offset = time.timezone / 3600
 # NEW: Show the sign (+/-) of timezone offset correctly
 # Note, the sign is inverted when showing UTC offset
 tz_sign = ''
@@ -66,22 +61,57 @@ if tz_offset >= 0:
 else :
     tz_sign = '+'
 
-# NOTE Also the date must be corrected: keep yesterday for for east from Greenwich (tz_offset < 0)
-# Not corrected in this version!
 
+""" Debug variables set (values forced !)
+y, m, d = 2026, 1, 23
+hr, mn, sc = 14, 25, 53
+tz_offset, utc_hours = 2, 12
+jc, sd = 0.26061651, -19.369384  
+"""
 print(f"Timezone Offset {tz_offset} hours from UTC")
 
 # Local time 
 x = datetime.datetime(y, m, d_, hr, mn, sc)
 print("Local time:", x.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {tz_sign}{abs(tz_offset)} h")
-
+tloc = hr + mn / 60 + sc / 3600 # Local time in hours decimal
 # UTC Time
-ut = datetime.datetime(y, m, d_, hr + int(tz_offset), mn, sc) # UTC time
+ut = datetime.datetime(y, m, d_, utc_hours, mn, sc) # UTC time
+"""
+if hr == 0:
+    utc_hours = (23 + int(tz_offset) % 24)
+    if utc_hours < 0:
+        utc_hours += 24
+        y -= 1
+        if m == 1:
+            m = 12
+            y -= 1
+        else:
+            m -= 1
+        # Get the correct day of previous month
+        if m in [1,3,5,7,8,10,12]:
+            d_ = 31
+        elif m in [4,6,9,11]:
+            d_ = 30
+        elif m == 2:
+            # Check for leap year
+            if (y % 4 == 0 and y % 100 != 0) or (y % 400 == 0):
+                d_ = 29
+            else:
+                d_ = 28
+    ut_day = d_ -1
+else:
+    utc_hours = (hr - int(tz_offset)) % 24
+    ut_day = d_
+    ut = datetime.datetime(y, m, ut_day, utc_hours, mn, sc)
+"""
 print("UTC time:  ", ut.strftime("%A, %Y-%m-%d %H:%M:%S"))
 
-jd_afternoon = jdn + (hr + tz_offset - 12) / 24 + mn / 60 / 24 + sc / 3600 / 24
-jd_morning = jdn - 0.5 + (hr + tz_offset) / 24 + mn / 60 / 24 + sc / 3600 / 24
+jd_morning = jdn - 1.5 + (hr + tz_offset) / 24 + mn / 60 / 24 + sc / 3600 / 24
+jd_afternoon =   jdn - 0.5 + (hr + tz_offset) / 24 + mn / 60 / 24 + sc / 3600 / 24
+print("morning", round(jd_morning,6), "afternoon", round(jd_afternoon,6))
 
+# The JD starts at noon UTC, so we need to adjust the time accordingly
+# We also calculate the timezone offset from UTC
 jd_selected = jd_morning if (utc_hours < 12) else jd_afternoon
 
 print("Selected JD", round(jd_selected,6))
@@ -93,10 +123,19 @@ print("Selected JD", round(jd_selected,6))
 # t = Time(x, scale='utc')
 # print("Astropy JD", round(t.jd,6))
 
-# Next we continue with defining the functions for calculating the solar position for given location and time
-# using NOAA solar model, see https://gml.noaa.gov/grad/solcalc/solareqns.PDF
+# Next we continue with defining the functions for calculating the solar position
+# for given location and time using NOAA solar model, see
+# https://gml.noaa.gov/grad/solcalc/solareqns.PDF
 # The required functions are translated manually from the NOAA's spreadsheet
-# and attached in the file noaa-solar.py
+
+# Conversion factor from degrees to radians
+deg2rad = pi / 180.0
+
+def rad(x):
+    return(pi * x / 180.0)
+
+def deg(x):
+    return(180.0 * x / pi)
 
 # We shall define first the function 'Julian Century' which is used
 # frequently as argument of many further functions.
@@ -110,29 +149,7 @@ def julian_century(jd):
 jc = julian_century(jd_selected) # tested 2026-01-20 12:34:53 OK
 print("Julian Century JC", round(jc,8))
 
-# NOTE: INCORRECT TIMEZONE OFFSET AS LOCAL TIME WAS OVER 24:00
-# Corrections made in this version, but not yet tested fully 
-# Output was following when local time was 2026-01-20 14:34:00
-"""
-Current local time 2026-01-20 14:34:00
-Julian Day Number JDN 2461061
-year 2026 month 1 day 20
-Epoch seconds 1768912440.0
-Current time seconds part 0.0
-Epoch (1970-01-01) posix daynumber 20473.0
-remaining of today 45240.0 sec
-Hours of current UTC time 12.0
-Timezone Offset -2.0 hours from UTC
-Local time: Tuesday, 2026-01-20 14:34:00 Timezone UTC +2.0 h " # Ok for tested time 
-UTC time:   Tuesday, 2026-01-20 12:34:00 # Ok for tested time
-Selected JD 2461061.023611    # tested OK
-Julian Century JC 0.26053453  # tested OK
-Geometric Mean Longitude of the Sun (degrees) 299.910032 # tested OK
-"""
-
-# Test to do, utc-hour 23, INCORRECT day 01-20 and weekday 'Tuesday',
-# needs to be 'Monday 19th' because UTC-hour is still less than 24
-  
+ 
 
 def geom_mean_long_sun(jc):
     """Calculate the Geometric Mean Longitude of the Sun (in degrees)"""
@@ -161,3 +178,221 @@ def eccent_earth_orbit(jc):
 eoe = eccent_earth_orbit(jc)
 print("Eccentricity of Earth's orbit", round(eoe,8))
 # Tested OK , eoe = 0.016698 for 2026-01-20 18:21:18 UTC
+
+def sun_eq_of_center(jc, gmas):
+    """Calculate the Sun's Equation of the Center (in degrees)"""
+    gmas_rad = deg2rad*gmas
+    sec = (sin(gmas_rad) * (1.914602 - jc * (0.004817 + 0.000014 * jc)) +
+           sin(2 * gmas_rad) * (0.019993 - 0.000101 * jc) +
+           sin(3 * gmas_rad) * 0.000289)
+    return sec
+
+sec = sun_eq_of_center(jc, gmas)
+print("Sun's Equation of the Center (degrees)", round(sec,6))
+# Tested OK , sec = 0.583621 for 2026-01-21 09:45:14 UTC
+
+def sun_true_long(gmls, sec):
+    """Calculate the Sun's True Longitude (in degrees)"""
+    stl = gmls + sec
+    return (stl % 360.0)
+stl = sun_true_long(gmls, sec)
+print("Sun's True Longitude (degrees)", round(stl,6))
+# Tested OK , stl = 301.446666 for 2026-01-21 11:42:31 UTC
+
+def sun_app_long(jc, stl):
+    """Calculate the Sun's Apparent Longitude (in degrees)"""
+    omega = 125.04 - 1934.136 * jc
+    sal = stl - 0.00569 - 0.00478 * sin(omega * deg2rad)
+    return sal
+sal = sun_app_long(jc, stl)
+print("Sun's Apparent Longitude (degrees)", round(sal,6))
+# Tested OK , sal = 301.47210 for 2026-01-21 12:24:22 UTC
+
+def mean_obliq_ecliptic(jc):
+    """Calculate the Mean Obliquity of the Ecliptic (in degrees)"""
+    moe = 23.0 + (26.0 + ((21.448 - jc * (46.815 \
+     + jc * (0.00059 - jc * 0.001813)))) / 60.0) / 60.0
+    return moe
+moe = mean_obliq_ecliptic(jc)
+print("Mean Obliquity of the Ecliptic (degrees)", round(moe,6))
+# Tested OK , moe = 23.435903 for 2026-01-21 12:24:22 UTC
+
+def obliq_corr(jc, moe):
+    """Calculate the Obliquity Correction (in degrees)"""
+    omega = 125.04 - 1934.136 * jc
+    oc = moe + 0.00256 * cos(omega * deg2rad)
+    return oc
+oc = obliq_corr(jc, moe)
+print("Obliquity Correction (degrees)", round(oc,6))
+# Tested OK , oc = 23.438324 for 2026-01-21 19:02:20 UTC
+
+def sun_declination(oc, sal):
+# Calculate the Sun's Declination (in degrees)
+    sd = deg(asin(sin(rad(oc))*sin(rad(sal))))
+    return sd
+
+sd = sun_declination(oc, sal)
+print("Sun's Declination (degrees)", round(sd,6))
+"""
+ Tested OK , sd = -19,59936 for 2026-01-22 12:49:33 UTC
+"""
+
+def y_variable(jc, oc):
+    """Calculate the Y variable for the equation of time"""
+    y = tan(rad(oc) / 2.0) * tan(rad(oc) / 2.0)
+    return y
+
+y_var = y_variable(jc, oc)
+print("Y variable for equation of time", round(y_var,6))
+# Tested OK , y_var =  0.043031 for 2026-01-22 12:49:33 UTC, oc = 23.438323
+
+"""Equation of Time (in minutes)"""
+def equation_of_time(y, gmls, eoe, gmas):
+    eot = y * sin(2 * rad(gmls)) - 2 * eoe * sin(rad(gmas)) \
+            + 4 * eoe * y * sin(rad(gmas)) * cos(2 * rad(gmls)) \
+            - 0.5 * y * y * sin(4 * rad(gmls)) - 1.25 * eoe * eoe * sin(2 * rad(gmas))
+
+    eot = deg(eot) * 4.0  # Convert to minutes
+    return eot
+eot = equation_of_time(y_var, gmls, eoe, gmas)
+print("Equation of Time (minutes)", round(eot,6))
+# Tested OK , eot = -11.616387 for 2026-01-22 15:37:06, longitude 24.18 E 
+
+def ha_sunrise(jc, lat):
+    """Calculate the Hour Angle at Sunrise (in degrees)"""
+    sd = sun_declination(obliq_corr(jc, mean_obliq_ecliptic(jc)), sun_app_long(jc, sun_true_long(geom_mean_long_sun(jc), sun_eq_of_center(jc, geom_mean_anom_sun(jc)))))
+    ha = deg(acos(cos(rad(90.833)) / (cos(rad(lat)) * cos(rad(sd))) - tan(rad(lat)) * tan(rad(sd))))
+    return ha
+ha = ha_sunrise(jc, latitude)
+print("Hour Angle at Sunrise (degrees)", round(ha,6))
+
+def haSunrise(latitude, sd):
+    haS = deg(acos(cos(rad(90.833)) / (cos(rad(latitude)) * cos(rad(sd))) - tan(rad(latitude)) * tan(rad(sd))))
+    return haS
+
+haSunR = haSunrise(latitude, sd)
+print("haSunrise", round(haSunR,6))
+
+def true_solar_time(jd, longitude, hr, mn, sc, tz_offset, eot=0.0):
+    # Calculate the True Solar Time (in minutes)
+    # time_in_minutes: local time in minutes (0..1440)
+    time_in_minutes = hr * 60 + mn + sc / 60
+    # tz_offset from time.timezone is seconds west of UTC -> hours west of UTC
+    # spreadsheet/timezone convention: positive for east of Greenwich
+    tz = -tz_offset
+    # Apply equation of time (minutes) and longitude/timezone offsets
+    tst = (time_in_minutes + eot + 4 * longitude - 60 * tz) % 1440
+    return tst
+    # If tst < 0 then tst = tst + 1440
+
+
+def solar_noon(longitude, eot, tzoffs):
+    # =(720-4*$B$4-V2+$B$5*60)/1440
+    day_fraction = (720 - 4 * longitude - eot - tzoffs * 60) / 1440
+    noon_as_minutes = 720 - 4 * longitude - eot - tzoffs * 60
+    noon_hours = int(noon_as_minutes) // 60
+    noon_minutes = int(noon_as_minutes) % 60
+    noon_seconds = (60*noon_as_minutes) % 60
+    noon_hr_mn_str = (f"Noon time {noon_hours}:{noon_minutes}:{round(noon_seconds, 2)}")
+    return [noon_hr_mn_str, day_fraction]
+solarNoon = solar_noon(longitude, eot, tz_offset)
+
+# Tested, result Noon time 12:36:7.11, expected 12:36:06 for UTC time:   Wednesday, 2026-01-28 23:11:32
+# Time conversion from minutes to format hr:mn:sc needs separate function as needed for sunrise, sunset times as well.
+
+tst = true_solar_time(jd_selected, longitude, hr, mn, sc, tz_offset, eot)
+print("True Solar Time (minutes)", round(tst,6))
+# Tested OK , tst = 640.296515 for 2026-01-20 9:16:18 UTC, longitude 24.18 E
+
+def hour_angle(tcurrent, jc, lon):
+    """Calculate the Hour Angle (in degrees)"""
+    ha = (tcurrent / 4.0) - 180.0 # + lon
+    if ha < -180.0:
+        ha += 360.0
+    return ha
+
+hourAngle = hour_angle(tst, jc, longitude)
+print("hourAngle=", round(hourAngle,6))
+
+print(solarNoon[0])
+#print("Fraction of day", solarNoon[1])
+
+def sunrise_time(df, haSunR):
+    srt = df - 4 *  haSunR / 1440
+    return srt
+
+
+def sun_time(dayf, haSunR):
+    sunT = sunrise_time(solarNoon[1], haSunR)
+    sunH = 24 * sunT
+    sunMinutes = 60 * sunH
+    sunHours = int(sunH)
+    sMinutes = int(sunMinutes) % 60
+    sunSeconds = 60 * sunMinutes % 60 
+    return f"{sunHours}:{sMinutes}:{round(sunSeconds)}"
+
+
+sunrise_str = sun_time(solarNoon[1], haSunR)
+print("Sunrise time", sunrise_str)
+sunset_str = sun_time(solarNoon[1], -haSunR)
+print("Sunset time ", sunset_str)
+
+dayLength = 2 * haSunR / 15 # in decimal hours
+print("Daylength (hours)", round(dayLength,4))
+dlhr = int(dayLength)
+dlmn = int((dayLength - dlhr) * 60)
+dlsc = (dayLength - dlhr - dlmn / 60) * 3600
+print(f"Daylength {dlhr} h {dlmn} min {round(dlsc)} sec")
+
+
+def solar_zenith_angle(tcurrent, ha, lat, sd):
+    """Calculate the Solar Zenith Angle (in degrees)"""
+    sins = sin(rad(lat)) * sin(rad(sd))
+    coss = cos(rad(lat)) * cos(rad(sd)) * cos(rad(ha))
+    sza = deg(acos(sins + coss))
+    return sza
+
+sza = solar_zenith_angle(tst, hourAngle, latitude, sd)
+print("Solar Zenith Angle (degrees)", round(sza,6))
+# Tested , result 88.445704, expected 88,445704 for 2026-01-27 14:59:28 Timezone UTC +2.0 h, latitude 60.25 N, OK
+
+print("Solar Elevation Angle (degrees)", round(90.0 - sza,6))
+# Tested , result 1.554296, expected 1.554296 for 2026-01-27 14:59:28 Timezone UTC +2.0 h, latitude 60.25 N, OK
+# Final printout:
+# Solar Zenith Angle (degrees) 88.445704
+# Solar Elevation Angle (degrees) 1.554296
+
+"""
+We'll continue later with calculations: athmospheric refraction correction of elevation angle
+"""
+def solar_azimuth(ha, sza, sd, lat):
+    """Calculate the Solar Azimuth Angle (in degrees clockwise from north)"""
+    saz = 0.0
+    sin_az = (cos(rad(sd)) * sin(rad(ha))) / sin(rad(sza))
+    cos_az = ( (sin(rad(sd)) - sin(rad(lat)) * cos(rad(sza))) /
+               (cos(rad(lat)) * sin(rad(sza))) )
+    az_rad = acos(cos_az)
+    az_deg = deg(az_rad)
+    if sin_az < 0:
+        saz = az_deg
+    else:
+        saz = 360.0 - az_deg
+    return saz
+
+saz = solar_azimuth(hourAngle, sza, sd, latitude)
+print("Solar Azimuth Angle (degrees clockwise from north)", round(saz, 6))
+# Tested , result 319.95879, expected 319.95879 for 2026-01-30 22:26:25 local time Timezone UTC +2.0 h,
+# latitude 65.85 N,  seems OK
+
+"""
+This is now OK as I changed it more functional: used only input variables, no global variables 
+direct calls. That is just the way to avoid hidden errors, if the variables are afterwards
+changed globally.
+
+The really functional languages dont allow any update of variable values nor type changes.
+Unfortunately Python is not such strict.
+
+We have still a minory thing to do later: atmospheric refraction correction of elevation angle.
+
+Then we could make an importable module of these functions for solar position calculations.
+"""
