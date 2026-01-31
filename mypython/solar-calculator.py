@@ -62,12 +62,7 @@ else :
     tz_sign = '+'
 
 
-""" Debug variables set (values forced !)
-y, m, d = 2026, 1, 23
-hr, mn, sc = 14, 25, 53
-tz_offset, utc_hours = 2, 12
-jc, sd = 0.26061651, -19.369384  
-"""
+
 print(f"Timezone Offset {tz_offset} hours from UTC")
 
 # Local time 
@@ -107,8 +102,15 @@ else:
 print("UTC time:  ", ut.strftime("%A, %Y-%m-%d %H:%M:%S"))
 
 jd_morning = jdn - 1.5 + (hr + tz_offset) / 24 + mn / 60 / 24 + sc / 3600 / 24
+# jd_morning is 2461070.81809, expected 2461071.81809 for 2026-01-31 07:38:03 UTC
+# Forcing now value to be jd_morning = 2461071.81809 for testing
+jd_morning += 1.0 
+# note JDN is Ok 2461072 for 2026-01-31
+# Retested, jd_morning is 2461071.844699 for 2026-01-31 10:16:22 local, OK
 jd_afternoon =   jdn - 0.5 + (hr + tz_offset) / 24 + mn / 60 / 24 + sc / 3600 / 24
 print("morning", round(jd_morning,6), "afternoon", round(jd_afternoon,6))
+# Retested, jd_afternoon is 2461071.844699 for 2026-01-31 10:16:22 local, it will
+# be Ok in afternoon, +0.5 day from noon UTC (expected local 14:36:42)
 
 # The JD starts at noon UTC, so we need to adjust the time accordingly
 # We also calculate the timezone offset from UTC
@@ -362,9 +364,50 @@ print("Solar Elevation Angle (degrees)", round(90.0 - sza,6))
 # Solar Zenith Angle (degrees) 88.445704
 # Solar Elevation Angle (degrees) 1.554296
 
-"""
-We'll continue later with calculations: athmospheric refraction correction of elevation angle
-"""
+
+# We'll continue with calculations: athmospheric refraction correction of elevation angle
+
+def belowZero(hx):
+        return -20.774 / tan(rad(hx)) / 3600.0
+    
+def belowEightyFive(hx):
+        v1 = tan(rad(hx))
+        v2 = pow(tan(rad(hx)), 3.0)
+        v3 = pow(tan(rad(hx)), 5.0)
+        v = ((58.1 / v1) - (0.07 / v2) + (8.6e-5 / v3)) / 3600.0
+        return v
+    
+def belowFive(hx):
+        v = (1735.0 - 518.2 * hx + 103.4 * pow(hx, 2.0) \
+           - 12.79 * pow(hx, 3.0) + 0.711 * pow(hx, 4.0)) / 3600.0
+        return v
+    
+# Calculation of atmospheric refraction correction angle
+# h = solar elevation (degrees)
+# res = result of calculation
+
+def atmosRefract(h):
+
+    print('h', h)
+
+    res = -999
+
+    if h < -0.575:
+        res = belowZero(h)
+    elif h <= 5.0:
+        res = belowFive(h)
+    elif h <= 85.0:
+        res = belowEightyFive(h)
+    else:
+        res = 0.0 
+        
+    return res
+
+refract = atmosRefract(90.0 - sza)
+cor_elev = 90.0 - sza + refract
+print('Approx. atmospheric refraction (deg)', round(refract,5))
+print('Solar elevation corrected for atm, refraction', round(cor_elev,4))
+
 def solar_azimuth(ha, sza, sd, lat):
     """Calculate the Solar Azimuth Angle (in degrees clockwise from north)"""
     saz = 0.0
