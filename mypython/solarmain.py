@@ -107,7 +107,6 @@ print("Selected JD", round(jd_selected,6), "fraction of century", round(jc,6))
 # https://gml.noaa.gov/grad/solcalc/solareqns.PDF
 # The required functions follow model of NOAA's spreadsheet
 
-
 gmls = geom_mean_long_sun(jc)
 
 gmas = geom_mean_anom_sun(jc)
@@ -125,7 +124,6 @@ moe = mean_obliq_ecliptic(jc)
 oc = obliq_corr(jc, moe)
 
 sd = sun_declination(oc, sal)
-
 print("Sun Declination (degrees)", round(sd,6))
 
 y_var = y_variable(jc, oc)
@@ -142,18 +140,6 @@ solarNoon = solar_noon(longitude, eot, tz_offset)
 
 hourAngle = hour_angle(tst, jc, longitude)
 
-def sunrise_time(df, haSunR):
-    srt = df - 4 *  haSunR / 1440
-    return srt
-
-def sun_time(dayf, haSunR):
-    sunT = sunrise_time(solarNoon[1], haSunR)
-    sunH = 24 * sunT
-    sunMinutes = 60 * sunH
-    sunHours = int(sunH)
-    sMinutes = int(sunMinutes) % 60
-    sunSeconds = 60 * sunMinutes % 60 
-    return f"{sunHours}:{sMinutes}:{round(sunSeconds)}"
 
 sunrise_str = sun_time(solarNoon[1], haSunR)
 print("\nSunrise time \t", sunrise_str)
@@ -176,42 +162,6 @@ sza = solar_zenith_angle(tst, hourAngle, latitude, sd)
 print("\nSolar Zenith Angle (degrees)", round(sza,2))
 print("Solar Elevation Angle (degrees)", round(90.0 - sza,2))
 
-
-# Three categories of elevations angle: < 0, < 5, < 85
-# used for refraction angles
-def belowZero(hx):
-        return -20.774 / tan(rad(hx)) / 3600.0
-    
-def belowEightyFive(hx):
-        v1 = tan(rad(hx))
-        v2 = pow(tan(rad(hx)), 3.0)
-        v3 = pow(tan(rad(hx)), 5.0)
-        v = ((58.1 / v1) - (0.07 / v2) + (8.6e-5 / v3)) / 3600.0
-        return v
-    
-def belowFive(hx):
-        v = (1735.0 - 518.2 * hx + 103.4 * pow(hx, 2.0) \
-           - 12.79 * pow(hx, 3.0) + 0.711 * pow(hx, 4.0)) / 3600.0
-        return v
-    
-# Calculation of atmospheric refraction correction angle
-# h = solar elevation (degrees)
-# res = result of calculation
-
-def atmosRefract(h):
-
-    res = -999
-
-    if h < -0.575:
-        res = belowZero(h)
-    elif h <= 5.0:
-        res = belowFive(h)
-    elif h <= 85.0:
-        res = belowEightyFive(h)
-    else:
-        res = 0.0 
-        
-    return res
 
 refract = atmosRefract(90.0 - sza)
 print('\nApprox. atmospheric refraction (deg)', round(refract,5))
