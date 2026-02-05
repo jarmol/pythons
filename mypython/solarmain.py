@@ -23,7 +23,18 @@ if longitude >= 0.0 :
 else:
     symLon = "° W"
 
-print("\nLatitude", latitude, symLat,  "Longitude", longitude, symLon) 
+# Colour codes
+# invalid escape sequence '\E'
+# Which colourcodes are used in Python 3 ?
+# About colours https://i.sstatic.net/9UVnC.png
+
+black_background = "\033[40m"
+green_text = "\033[92m"
+yellow_text = "\033[93m"
+blue_text = "\033[94m"
+white_text = "\033[97m" 
+
+print(white_text + "Latitude", latitude, symLat,  "Longitude", longitude, symLon) 
 jdn = jdn_from_date(y, m, d_)
 
 print("Julian Day Number JDN", jdn)
@@ -142,7 +153,9 @@ hourAngle = hour_angle(tst, jc, longitude)
 
 
 sunrise_str = sun_time(solarNoon[1], haSunR)
-print("\nSunrise time \t", sunrise_str)
+
+print(black_background, yellow_text)
+print("Sunrise time \t", sunrise_str)
 sunset_str = sun_time(solarNoon[1], -haSunR)
 print("Sunset time \t", sunset_str)
 
@@ -159,7 +172,7 @@ dlsc = (dayLength - dlhr - dlmn / 60) * 3600
 print(f"Daylength \t {dlhr} h {dlmn} min {round(dlsc)} sec")
 
 sza = solar_zenith_angle(tst, hourAngle, latitude, sd)
-print("\nSolar Zenith Angle (degrees)", round(sza,2))
+print(green_text + "\nSolar Zenith Angle (degrees)", round(sza,2))
 print("Solar Elevation Angle (degrees)", round(90.0 - sza,2))
 
 
