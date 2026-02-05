@@ -33,8 +33,10 @@ green_text = "\033[92m"
 yellow_text = "\033[93m"
 blue_text = "\033[94m"
 white_text = "\033[97m" 
+clear_screen = "\033[2J"
 
-print(white_text + "Latitude", latitude, symLat,  "Longitude", longitude, symLon) 
+print(clear_screen + '\033[91;1m' + " SOLAR CALCULATOR" + '\033[0m')
+print(white_text + "\nLatitude", latitude, symLat,  "Longitude", longitude, symLon) 
 jdn = jdn_from_date(y, m, d_)
 
 print("Julian Day Number JDN", jdn)
@@ -65,38 +67,13 @@ print(f"Timezone Offset {tz_offset} hours from UTC")
 x = datetime.datetime(y, m, d_, hr, mn, sc)
 print("Local time:", x.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {tz_sign}{abs(tz_offset)} h")
 tloc = hr + mn / 60 + sc / 3600 # Local time in hours decimal
+
 # UTC Time
+if utc_hours >=  24 + tz_offset:
+    d_ -= 1
+
 ut = datetime.datetime(y, m, d_, utc_hours, mn, sc) # UTC time
 print("UTC time:  ", ut.strftime("%A, %Y-%m-%d %H:%M:%S"))
-
-"""
-if hr == 0:
-    utc_hours = (23 + int(tz_offset) % 24)
-    if utc_hours < 0:
-        utc_hours += 24
-        y -= 1
-        if m == 1:
-            m = 12
-            y -= 1
-        else:
-            m -= 1
-        # Get the correct day of previous month
-        if m in [1,3,5,7,8,10,12]:
-            d_ = 31
-        elif m in [4,6,9,11]:
-            d_ = 30
-        elif m == 2:
-            # Check for leap year
-            if (y % 4 == 0 and y % 100 != 0) or (y % 400 == 0):
-                d_ = 29
-            else:
-                d_ = 28
-    ut_day = d_ -1
-else:
-    utc_hours = (hr - int(tz_offset)) % 24
-    ut_day = d_
-    ut = datetime.datetime(y, m, ut_day, utc_hours, mn, sc)
-"""
 
 jd_morning = jdn - 1.5 + (hr + tz_offset) / 24 + mn / 60 / 24 + sc / 3600 / 24
 # Forcing now value to be jd_morning += 1
@@ -135,7 +112,7 @@ moe = mean_obliq_ecliptic(jc)
 oc = obliq_corr(jc, moe)
 
 sd = sun_declination(oc, sal)
-print("Sun Declination (degrees)", round(sd,6))
+print("\n\tSun Declination ", round(sd,6), '°')
 
 y_var = y_variable(jc, oc)
 
@@ -155,32 +132,30 @@ hourAngle = hour_angle(tst, jc, longitude)
 sunrise_str = sun_time(solarNoon[1], haSunR)
 
 print(black_background, yellow_text)
-print("Sunrise time \t", sunrise_str)
+print("|\tSunrise time \t", sunrise_str)
 sunset_str = sun_time(solarNoon[1], -haSunR)
-print("Sunset time \t", sunset_str)
-
+print("|\tSunset time \t", sunset_str)
 
 noon_str = sun_time(solarNoon[1], 0.0)
-print("Noon time \t", noon_str)
-
+print("|\tNoon time \t", noon_str)
 
 dayLength = 2 * haSunR / 15 # in decimal hours
 
 dlhr = int(dayLength)
 dlmn = int((dayLength - dlhr) * 60)
 dlsc = (dayLength - dlhr - dlmn / 60) * 3600
-print(f"Daylength \t {dlhr} h {dlmn} min {round(dlsc)} sec")
+print(f"|\tDaylength \t {dlhr} h {dlmn} min {round(dlsc)} sec")
 
 sza = solar_zenith_angle(tst, hourAngle, latitude, sd)
-print(green_text + "\nSolar Zenith Angle (degrees)", round(sza,2))
-print("Solar Elevation Angle (degrees)", round(90.0 - sza,2))
+print(green_text + "\nSolar Zenith Angle (deg)\t", round(sza,2))
+print("Solar Elevation Angle (deg)\t", round(90.0 - sza,2))
 
 
 refract = atmosRefract(90.0 - sza)
-print('\nApprox. atmospheric refraction (deg)', round(refract,5))
+print('\nApprox. atmospheric refraction (deg)  \t \t', round(refract,5))
 
 cor_elev = 90.0 - sza + refract
-print(f'\nSolar elevation, corrected for atmosph. refraction \t {round(cor_elev,3)} °')
+print(f'Solar elevation, corrected for atm. refraction \t {round(cor_elev,3)} °')
 
 saz = solar_azimuth(hourAngle, sza, sd, latitude)
-print(f"\nSolar Azimuth Angle (clockwise from north) \t \t {round(saz, 2)} °")
+print(f"\nSolar Azimuth Angle (clockwise from north)  \t {round(saz, 2)} °")
