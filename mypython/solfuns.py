@@ -69,7 +69,6 @@ def obliq_corr(jc, moe):
     oc = moe + 0.00256 * cos(rad(omega))
     return oc
 
-# oc = obliq_corr(jc, moe)
 
 def sun_declination(oc, sal):
 # Calculate the Sun's Declination (in degrees)
@@ -130,6 +129,15 @@ def hour_angle(tcurrent, jc, lon):
         ha += 360.0
     return ha
 
+def sun_time(dayf, haSunR):
+    sunT = dayf - haSunR / 360.0
+    sunH = 24 * sunT
+    sunMinutes = 60 * sunH
+    sunHours = int(sunH)
+    sMinutes = int(sunMinutes) % 60
+    sunSeconds = 60 * sunMinutes % 60 
+    return f"{sunHours}:{sMinutes}:{round(sunSeconds)}"
+
 def solar_zenith_angle(tcurrent, ha, lat, sd):
     """Calculate the Solar Zenith Angle (in degrees)"""
     sins = sin(rad(lat)) * sin(rad(sd))
@@ -151,3 +159,39 @@ def solar_azimuth(ha, sza, sd, lat):
     else:
         saz = 360.0 - az_deg
     return saz
+
+# Three categories of elevations angle: < 0, < 5, < 85
+# used for refraction angles
+def belowZero(hx):
+        return -20.774 / tan(rad(hx)) / 3600.0
+    
+def belowEightyFive(hx):
+        v1 = tan(rad(hx))
+        v2 = pow(tan(rad(hx)), 3.0)
+        v3 = pow(tan(rad(hx)), 5.0)
+        v = ((58.1 / v1) - (0.07 / v2) + (8.6e-5 / v3)) / 3600.0
+        return v
+    
+def belowFive(hx):
+        v = (1735.0 - 518.2 * hx + 103.4 * pow(hx, 2.0) \
+           - 12.79 * pow(hx, 3.0) + 0.711 * pow(hx, 4.0)) / 3600.0
+        return v
+
+# Calculation of atmospheric refraction correction angle
+# h = solar elevation (degrees)
+# res = result of calculation
+
+def atmosRefract(h):
+
+    res = -999
+
+    if h < -0.575:
+        res = belowZero(h)
+    elif h <= 5.0:
+        res = belowFive(h)
+    elif h <= 85.0:
+        res = belowEightyFive(h)
+    else:
+        res = 0.0 
+        
+    return res
