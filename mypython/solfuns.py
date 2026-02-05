@@ -119,7 +119,7 @@ def solar_noon(longitude, eot, tzoffs):
     noon_hours = int(noon_as_minutes) // 60
     noon_minutes = int(noon_as_minutes) % 60
     noon_seconds = (60*noon_as_minutes) % 60
-    noon_hr_mn_str = (f"Noon time {noon_hours}:{noon_minutes}:{round(noon_seconds, 2)}")
+    noon_hr_mn_str = (f"Noon time {noon_hours}:{noon_minutes:02d}:{round(noon_seconds):02d}")
     return [noon_hr_mn_str, day_fraction]
 
 def hour_angle(tcurrent, jc, lon):
@@ -132,11 +132,12 @@ def hour_angle(tcurrent, jc, lon):
 def sun_time(dayf, haSunR):
     sunT = dayf - haSunR / 360.0
     sunH = 24 * sunT
-    sunMinutes = 60 * sunH
-    sunHours = int(sunH)
-    sMinutes = int(sunMinutes) % 60
-    sunSeconds = 60 * sunMinutes % 60 
-    return f"{sunHours}:{sMinutes}:{round(sunSeconds)}"
+    # compute total seconds and split to HH:MM:SS with zero-padding
+    total_seconds = int(round(sunH * 3600))
+    sunHours = total_seconds // 3600
+    sMinutes = (total_seconds % 3600) // 60
+    sunSeconds = total_seconds % 60
+    return f"{sunHours:02d}:{sMinutes:02d}:{sunSeconds:02d}"
 
 def solar_zenith_angle(tcurrent, ha, lat, sd):
     """Calculate the Solar Zenith Angle (in degrees)"""
