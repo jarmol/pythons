@@ -119,7 +119,7 @@ def solar_noon(longitude, eot, tzoffs):
     noon_hours = int(noon_as_minutes) // 60
     noon_minutes = int(noon_as_minutes) % 60
     noon_seconds = (60*noon_as_minutes) % 60
-    noon_hr_mn_str = (f"Noon time {noon_hours}:{noon_minutes:02d}:{round(noon_seconds):02d}")
+    noon_hr_mn_str = (f"Noon time {noon_hours}:{noon_minutes}:{round(noon_seconds, 2)}")
     return [noon_hr_mn_str, day_fraction]
 
 def hour_angle(tcurrent, jc, lon):
