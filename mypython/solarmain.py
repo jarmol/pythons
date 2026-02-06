@@ -6,10 +6,11 @@ d = datetime.datetime.now()
 y, m, d_ = d.year, d.month, d.day
 hr,mn,sc = d.hour, d.minute, d.second
 
-longitude =  input("Enter your longitude in degrees (east +, west -): ") or  "24.18"
+# Default Helsinki, Finland, approx. city center
+longitude =  input("Enter your longitude in degrees (east +, west -): ") or  "24.9"
 longitude = float(longitude)
 
-latitude = input("Enter your latitude in degrees (north +, south -): ") or "65.85"
+latitude = input("Enter your latitude in degrees (north +, south -): ") or "60.2"
 latitude = float(latitude)
 
 symLat, symLon  = "", ""
@@ -24,18 +25,18 @@ else:
     symLon = "° W"
 
 # Colour codes
-# invalid escape sequence '\E'
-# Which colourcodes are used in Python 3 ?
 # About colours https://i.sstatic.net/9UVnC.png
 
 black_background = "\033[40m"
+red_bold = "\033[91:1m"
 green_text = "\033[92m"
 yellow_text = "\033[93m"
 blue_text = "\033[94m"
-white_text = "\033[97m" 
+white_text = "\033[97m"
+color_end = "\033[0m" 
 clear_screen = "\033[2J"
 
-print(clear_screen + '\033[91;1m' + " SOLAR CALCULATOR" + '\033[0m')
+print(clear_screen + red_bold + "SOLAR CALCULATOR" + color_end)
 print(white_text + "\nLatitude", latitude, symLat,  "Longitude", longitude, symLon) 
 jdn = jdn_from_date(y, m, d_)
 
@@ -101,7 +102,7 @@ gmas = geom_mean_anom_sun(jc)
 
 eoe = eccent_earth_orbit(jc)
 
-sec = sun_eq_of_center(jc, gmas)
+sec = sun_eq_of_center(jc)
 
 stl = sun_true_long(gmls, sec)
 
@@ -109,9 +110,9 @@ sal = sun_app_long(jc, stl)
 
 moe = mean_obliq_ecliptic(jc)
 
-oc = obliq_corr(jc, moe)
+oc = obliq_corr(jc)
 
-sd = sun_declination(oc, sal)
+sd = sun_declination(jc, sal)
 print("\n\tSun Declination ", round(sd,6), '°')
 
 y_var = y_variable(jc, oc)

@@ -36,8 +36,9 @@ def eccent_earth_orbit(jc):
     eoe = 0.016708634 - jc * (0.000042037 + 0.0000001267 * jc)
     return eoe
 
-def sun_eq_of_center(jc, gmas):
+def sun_eq_of_center(jc):
     """Calculate the Sun's Equation of the Center (in degrees)"""
+    gmas = geom_mean_anom_sun(jc)
     gmas_rad = rad(gmas)
     sec = (sin(gmas_rad) * (1.914602 - jc * (0.004817 + 0.000014 * jc)) +
            sin(2 * gmas_rad) * (0.019993 - 0.000101 * jc) +
@@ -63,15 +64,18 @@ def mean_obliq_ecliptic(jc):
      + jc * (0.00059 - jc * 0.001813)))) / 60.0) / 60.0
     return moe
 
-def obliq_corr(jc, moe):
+def obliq_corr(jc):
     """Calculate the Obliquity Correction (in degrees)"""
+    moe = mean_obliq_ecliptic(jc)
     omega = 125.04 - 1934.136 * jc
     oc = moe + 0.00256 * cos(rad(omega))
     return oc
 
 
-def sun_declination(oc, sal):
+def sun_declination(jc, sal):
 # Calculate the Sun's Declination (in degrees)
+    moe = mean_obliq_ecliptic(jc)
+    oc = obliq_corr(jc)
     sd = deg(asin(sin(rad(oc))*sin(rad(sal))))
     return sd
 
