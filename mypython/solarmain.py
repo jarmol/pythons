@@ -82,7 +82,7 @@ jd_morning += 1.0
 jd_afternoon =   jdn - 0.5 + (hr + tz_offset) / 24 + mn / 60 / 24 + sc / 3600 / 24
 jd_selected = jd_morning if (utc_hours < 12) else jd_afternoon
 jc = julian_century(jd_selected) 
-print("Selected JD", round(jd_selected,6), "fraction of century", round(jc,6))
+print("Selected JD", round(jd_selected,6), "Epoch 2000 fraction of century", round(jc,6))
 
 # You can check the calculation with online JD calculators
 # Example : https://www.aavso.org/jd-calculator
@@ -92,43 +92,24 @@ print("Selected JD", round(jd_selected,6), "fraction of century", round(jc,6))
 # t = Time(x, scale='utc')
 # print("Astropy JD", round(t.jd,6))
 # Solar position (elevation and azimuth angle) is calculated
-# for given location and time using NOAA solar model, see
+# for given location and time.
+# While testing, the results were checked comparing to NOAA's spreadsheet
 # https://gml.noaa.gov/grad/solcalc/solareqns.PDF
-# The required functions follow model of NOAA's spreadsheet
 
-gmls = geom_mean_long_sun(jc)
-
-gmas = geom_mean_anom_sun(jc)
-
-eoe = eccent_earth_orbit(jc)
-
-sec = sun_eq_of_center(jc)
-
-stl = sun_true_long(gmls, sec)
-
-sal = sun_app_long(jc, stl)
-
-moe = mean_obliq_ecliptic(jc)
-
-oc = obliq_corr(jc)
-
-sd = sun_declination(jc, sal)
+sd = sun_declination(jc)
 print("\n\tSun Declination ", round(sd,6), '°')
 
-y_var = y_variable(jc, oc)
-
-eot = equation_of_time(y_var, gmls, eoe, gmas)
+eot = equation_of_time(jc)
 
 ha = ha_sunrise(jc, latitude, sd)
 
 haSunR = haSunrise(latitude, sd)
 
-tst = true_solar_time(longitude, hr, mn, sc, tz_offset, eot)
+tst = true_solar_time(longitude, hr, mn, sc, tz_offset, jc)
 
 solarNoon = solar_noon(longitude, eot, tz_offset)
 
-hourAngle = hour_angle(tst, jc, longitude)
-
+hourAngle = hour_angle(tst)
 
 sunrise_str = sun_time(solarNoon[1], haSunR)
 
@@ -141,22 +122,17 @@ noon_str = sun_time(solarNoon[1], 0.0)
 print("|\tNoon time \t", noon_str)
 
 dayLength = 2 * haSunR / 15 # in decimal hours
-
-dlhr = int(dayLength)
-dlmn = int((dayLength - dlhr) * 60)
-dlsc = (dayLength - dlhr - dlmn / 60) * 3600
-print(f"|\tDaylength \t {dlhr} h {dlmn} min {round(dlsc)} sec")
+print(time2hrmnsec(dayLength))
 
 sza = solar_zenith_angle(tst, hourAngle, latitude, sd)
-print(green_text + "\nSolar Zenith Angle (deg)\t", round(sza,2))
-print("Solar Elevation Angle (deg)\t", round(90.0 - sza,2))
 
+print("|\tSolar Elevation ", round(90.0 - sza,2), '°')
 
 refract = atmosRefract(90.0 - sza)
-print('\nApprox. atmospheric refraction (deg)  \t \t', round(refract,5))
+# print('\nApprox. atmospheric refraction (deg)  \t \t', round(refract,5))
 
 cor_elev = 90.0 - sza + refract
-print(f'Solar elevation, corrected for atm. refraction \t {round(cor_elev,3)} °')
+print(green_text + f'\nSolar elevation, corrected for atm. refraction \t {round(cor_elev,3)} °')
 
 saz = solar_azimuth(hourAngle, sza, sd, latitude)
 print(f"\nSolar Azimuth Angle (clockwise from north)  \t {round(saz, 2)} °")

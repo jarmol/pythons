@@ -45,13 +45,16 @@ def sun_eq_of_center(jc):
            sin(3 * gmas_rad) * 0.000289)
     return sec
 
-def sun_true_long(gmls, sec):
+def sun_true_long(jc):
     """Calculate the Sun's True Longitude (in degrees)"""
+    gmls = geom_mean_long_sun(jc)
+    sec = sun_eq_of_center(jc)
     stl = gmls + sec
     return (stl % 360.0)
 
-def sun_app_long(jc, stl):
+def sun_app_long(jc):
     """Calculate the Sun's Apparent Longitude (in degrees)"""
+    stl = sun_true_long(jc)
     omega = 125.04 - 1934.136 * jc
     sal = stl - 0.00569 - 0.00478 * sin(rad(omega))
     return sal
@@ -72,24 +75,29 @@ def obliq_corr(jc):
     return oc
 
 
-def sun_declination(jc, sal):
+def sun_declination(jc):
 # Calculate the Sun's Declination (in degrees)
-    moe = mean_obliq_ecliptic(jc)
+    stl = sun_true_long(jc)
+    sal = sun_app_long(jc)
     oc = obliq_corr(jc)
     sd = deg(asin(sin(rad(oc))*sin(rad(sal))))
     return sd
 
 # sd = sun_declination(oc, sal)
 
-def y_variable(jc, oc):
+def y_variable(jc):
     """Calculate the Y variable for the equation of time"""
+    oc = obliq_corr(jc)
     y = tan(rad(oc) / 2.0) * tan(rad(oc) / 2.0)
     return y
 
 """Equation of Time (in minutes)"""
-def equation_of_time(y, gmls, eoe, gmas):
-    a = rad(gmls)
+def equation_of_time(jc):
+    a = rad(geom_mean_long_sun(jc))
+    gmas = geom_mean_anom_sun(jc)
     b = rad(gmas)
+    eoe = eccent_earth_orbit(jc)
+    y = y_variable(jc)
     eot = y * sin(2 * a) - 2 * eoe * sin(b) \
     + 4 * eoe * y * sin(b) * cos(2 * a) \
     - 0.5 * y * y * sin(4 * a) - 1.25 * eoe * eoe * sin(2 * b)
@@ -105,19 +113,21 @@ def haSunrise(lat, sd):
     haS = deg(acos(cos(rad(90.833)) / (cos(rad(lat)) * cos(rad(sd))) - tan(rad(lat)) * tan(rad(sd))))
     return haS
 
-def true_solar_time(longitude, hr, mn, sc, tz_offset, eot=0.0):
+def true_solar_time(longitude, hr, mn, sc, tz_offset, jc):
     # Calculate the True Solar Time (in minutes)
     # time_in_minutes: local time in minutes (0..1440)
     time_in_minutes = hr * 60 + mn + sc / 60
     # tz_offset from time.timezone is seconds west of UTC -> hours west of UTC
     # spreadsheet/timezone convention: positive for east of Greenwich
     tz = -tz_offset
+    eot = equation_of_time(jc)
     # Apply equation of time (minutes) and longitude/timezone offsets
     tst = (time_in_minutes + eot + 4 * longitude - 60 * tz) % 1440
     return tst
 
-def solar_noon(longitude, eot, tzoffs):
+def solar_noon(longitude, jc, tzoffs):
     # =(720-4*$B$4-V2+$B$5*60)/1440
+    eot = equation_of_time(jc)
     day_fraction = (720 - 4 * longitude - eot - tzoffs * 60) / 1440
     noon_as_minutes = 720 - 4 * longitude - eot - tzoffs * 60
     noon_hours = int(noon_as_minutes) // 60
@@ -126,7 +136,7 @@ def solar_noon(longitude, eot, tzoffs):
     noon_hr_mn_str = (f"Noon time {noon_hours}:{noon_minutes}:{round(noon_seconds, 2)}")
     return [noon_hr_mn_str, day_fraction]
 
-def hour_angle(tcurrent, jc, lon):
+def hour_angle(tcurrent):
     """Calculate the Hour Angle (in degrees)"""
     ha = (tcurrent / 4.0) - 180.0 # + lon
     if ha < -180.0:
@@ -200,3 +210,9 @@ def atmosRefract(h):
         res = 0.0 
         
     return res
+
+def time2hrmnsec(dayLength):
+    dlhr = int(dayLength)
+    dlmn = int((dayLength - dlhr) * 60)
+    dlsc = (dayLength - dlhr - dlmn / 60) * 3600
+    return(f"|\tDaylength \t {dlhr} h {dlmn} min {round(dlsc)} sec")
