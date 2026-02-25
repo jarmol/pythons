@@ -15,7 +15,7 @@ print(black_bg, white_text, clear_screen + "Welcome to the Python Solar Calculat
 #runmode = input("Use mode d for debuging: ") or 'r'
 runmode = 'r'
 
-print("city number 1 Helsinki, 2 Tornio, 3 Stockholm")
+print("city number 1 Helsinki, 2 Tornio, 3 Stockholm, 4 Madrid ")
 
 cityNumber =  input("City number: ") or "0"
 if cityNumber == "1":
@@ -33,6 +33,11 @@ elif cityNumber == "3":
     longitude = 18.0686
     tz_city = 1
     cityName = "Stockholm"
+elif cityNumber == "4":
+    latitude  = 40.433
+    longitude = -3.70
+    tz_city = 1
+    cityName = "Madrid"
 
 else:
     longitude = input("Enter your longitude in degrees (east +, west -): ") or 25
@@ -77,15 +82,16 @@ utc_hours = int(day_seconds // 3600)
 if runmode == 'd': print("Hours of current UTC time", utc_hours)
 
 cet_hours = utc_hours + 1
-cet_offset = 1
+cet_offset = -1
 
 tz_offset = time.timezone / 3600
 # NEW: Show the sign (+/-) of timezone offset correctly
 # Note, the sign is inverted when showing UTC offset
 tz_sign = ''
 
-if tz_offset >= 0:
+if tz_offset > 0:
     tz_sign = '-'
+elif tz_offset == 0: tz_sign = ' '
 else :
     tz_sign = '+'
 
@@ -202,7 +208,8 @@ def sun_declination(jc):
     return sd
 
 sd = sun_declination(jc)
-print(clear_screen, cityName, "latitude", latitude, "longitude", longitude)
+print(clear_screen, f"{cityName}: Latitude {latitude}°, Longitude {longitude}°")
+#print(clear_screen, cityName, "latitude", latitude, "longitude", longitude)
 print(" Local time:", x.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {tz_sign}{abs(tz_offset)} h")
 print(" CET time:  ", et.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {tz_sign}{abs(cet_offset)} h")
 print(" UTC time:  ", ut.strftime("%A, %Y-%m-%d %H:%M:%S"))
@@ -267,10 +274,8 @@ def solar_noon(longitude, jc, tzoffs):
     noon_minutes = int(noon_as_minutes) % 60
     noon_seconds = int((60*noon_as_minutes) % 60)
     xt = datetime.datetime(y, m, d_, noon_hours, noon_minutes, noon_seconds) # noon time
-    solarNoon = xt.strftime("%A, %Y-%m-%d %H:%M:%S" + f" Timezone UTC {tz_sign}{abs(tz_offset)}")
+    solarNoon = xt.strftime("%A, %Y-%m-%d %H:%M:%S" + f" Timezone UTC {tz_sign}{abs(tzoffs)}")
     return [solarNoon, day_fraction]
-solarNoon = solar_noon(longitude, jc, tz_offset)
-#cetNoon = solar_noon(longitude,jc, cet_offset)
 tst = true_solar_time(longitude, hr, mn, sc, tz_offset, jc)
 if runmode == 'd': print("True Solar Time (minutes)", round(tst,6))
 
@@ -283,15 +288,25 @@ def hour_angle(tcurrent):
 hourAngle = hour_angle(tst)
 if runmode == 'd': print("hourAngle=", round(hourAngle,6))
 
-print(yellow_text + ' |    Noon time        ', solarNoon[0])
-#print(yellow_text + ' |    Noon time CE CET ', cetNoon[0])
+solarNoon = solar_noon(longitude, jc, tz_offset)
+cetNoon   = solar_noon(longitude, jc, cet_offset)
+
+if tz_city == 2:
+    print(yellow_text, "|    Eastern European normal time UTC + 2 h")
+    print(' |    Noon time        ', solarNoon[0])
+
+if tz_city == 1:
+    print(yellow_text, "|    Central European normal time UTC + 1 h")
+    print(' |    Noon time        ', cetNoon[0])
+
+
 
 def sunrise_time(df, haSunR):
     srt = df - 4 *  haSunR / 1440
     return srt
 
 
-def sun_time(dayf, haSunR):
+def sun_time(dayf, haSunR, tz_offset):
     sunT = sunrise_time(dayf, haSunR)
     sunH = 24 * sunT
     sunMinutes = 60 * sunH
@@ -302,11 +317,31 @@ def sun_time(dayf, haSunR):
     suntime_eet = xt.strftime("%A, %Y-%m-%d %H:%M:%S" + f" Timezone UTC {tz_sign}{abs(tz_offset)}") 
     return suntime_eet
 
+def ce_time(dayf, haSunR, cet_offset):
+    sunT = sunrise_time(dayf, haSunR)
+    sunH = 24 * sunT
+    sunMinutes = 60 * sunH
+    sunHours = int(sunH)
+    sMinutes = int(sunMinutes) % 60
+    sunSeconds = int(60 * sunMinutes % 60)
+    cet = datetime.datetime(y, m, d_, sunHours, sMinutes, sunSeconds)
+    suntime_cet = cet.strftime("%A, %Y-%m-%d %H:%M:%S" + f" Timezone UTC {tz_sign}{abs(cet_offset)}") 
+    return suntime_cet
 
-sunrise_str = sun_time(solarNoon[1], haSunR)
-print(" |    Sunrise time     ", sunrise_str)
-sunset_str = sun_time(solarNoon[1], -haSunR)
-print(" |    Sunset time      ", sunset_str)
+if tz_city == 2:
+    sunrise_str = sun_time(solarNoon[1], haSunR, tz_offset)
+    print(" |    Sunrise time     ", sunrise_str)
+    sunset_str = sun_time(solarNoon[1], -haSunR, tz_offset)
+    print(" |    Sunset time      ", sunset_str)
+#else: print()
+
+if tz_city == 1:
+    sunrise_cet = ce_time(cetNoon[1], haSunR, cet_offset)
+#   print(yellow_text, "|    Central European normal time UTC + 1 h")
+    print(" |    Sunrise time     ", sunrise_cet)
+    sunset_cet = ce_time(cetNoon[1], -haSunR, cet_offset)
+    print(" |    Sunset time      ", sunset_cet)
+else: print()
 
 dayLength = 2 * haSunR / 15 # in decimal hours
 if runmode == 'd': print("Daylength (hours)     ", round(dayLength,4))
@@ -325,7 +360,7 @@ def solar_zenith_angle(ha, lat, sd):
 sza = solar_zenith_angle(hourAngle, latitude, sd)
 if runmode == 'd': print("Solar Zenith Angle (degrees)", round(sza,6))
 
-print(f" |    Sun elevation                         {round(90.0 - sza, 4)}°")
+print(f" |    Sun elevation                         {round(90.0 - sza, 3)}°")
 
 # Three categories of elevations angle: < 0, < 5, < 85
 # used for refraction angles
@@ -367,7 +402,7 @@ def atmosRefract(h):
 
 refract = atmosRefract(90.0 - sza)
 cor_elev = 90.0 - sza + refract
-print(" |    Solar elevation, refraction corrected", round(cor_elev,4), '°')
+print(" |    Solar elevation, refraction corrected", round(cor_elev,3), '°')
 print(green_text)
 print(" Julian Century JC", round(jc,8))
 print(f" Sun declination   {round(sd,6)}°")
