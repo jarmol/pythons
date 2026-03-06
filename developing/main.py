@@ -15,32 +15,38 @@ t=''
 
 for j in range(0,8):
     t += suncities[j]['cityNumber'] + '. ' + suncities[j]['cityName']
-    if j < 5: t+= ', '
-    else: t += '\n'
+    t+= ', '
+    if j == 6: t += '\n'
+
 
 print(t)
 
 
 cNr =  input("City number (1 - 8): ") or "1"
 cNr = int(cNr) - 1
-if cNr < 0 or cNr > 7:
-   cNr = 0
 
-latitude = suncities[cNr]['latitude']
-longitude = suncities[cNr]['longitude']
-tz_city = suncities[cNr]['tz_city']
-cityName = suncities[cNr]['cityName']
-
-cityNumber = cNr + 1
-
-"""
-else:
-    longitude = input("Enter your longitude in degrees (east +, west -): ") or 25
-    latitude = input("Enter your latitude in degrees (north +, south -): ") or 60
+if -1 < cNr < 8:
+    latitude = suncities[cNr]['latitude']
+    longitude = suncities[cNr]['longitude']
+    longitude = float(longitude)
+    latitude = float(latitude)
+    tz_city = suncities[cNr]['tz_city']
+    cityName = suncities[cNr]['cityName']
+    cityNumber = cNr + 1
+elif cNr == 8:
+    longitude = input("Enter your longitude in degrees (east +, west -): ") or 24.9
+    longitude = float(longitude)
+    latitude = input("Enter your latitude in degrees (north +, south -): ") or 60.2
+    latitude = float(latitude)
+    tz_city = input("Enter your time zone (west neg., east pos. ): ") or 2.0
+    tz_city = float(tz_city)
     cityName = "No name"
-"""   
-longitude = float(longitude)
-latitude = float(latitude)
+else:
+    print("Index out of range!")
+    print("Nr", cNr )
+    cNr = 0
+    print("Using location", suncities[0]['cityName'])
+
 
 d = datetime.datetime.now()
 if runmode == 'd': print("Current local time", d.strftime("%Y-%m-%d %H:%M:%S"))
@@ -96,9 +102,20 @@ x = datetime.datetime(y, m, d_, hr, mn, sc)
 tloc = hr + mn / 60 + sc / 3600 # Local time in hours decimal
 
 # UTC Time
-if utc_hours >=  24 + tz_offset:
-    d_ -= 1
+print("debug utc_hours",utc_hours)
 
+if utc_hours >=  22:
+    d_ -= 1
+    
+# CET time
+#if cet_hours > 24 + tz_offset:
+#    d_ -= 1
+
+if cet_hours > 23:
+    cet_hours -= 24
+    d_ += 1
+
+print('debug cet_hours =',cet_hours)
 ut = datetime.datetime(y, m, d_, utc_hours, mn, sc) # UTC time
 et = datetime.datetime(y, m, d_, cet_hours, mn, sc) # CET time
 
@@ -122,10 +139,14 @@ jc = julian_century(jd_selected)
 
 sd = sun_declination(jc)
 cet_offset = -1
-print(f"{cityName}: Latitude {latitude}°, Longitude {longitude}°")
 print(" Local time:", x.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {tz_sign}{abs(tz_offset)} h")
 print(" CET time:  ", et.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {tz_sign}{abs(cet_offset)} h")
 print(" UTC time:  ", ut.strftime("%A, %Y-%m-%d %H:%M:%S"))
+
+if 0 <= cNr < 9:
+    print("index",cNr)
+    print(f"{cityName}: Latitude {latitude}°, Longitude {longitude}°")
+else: print("index out of range!", cNr)
 
 haSunR = haSunrise(latitude, sd)
 if runmode == 'd': print("haSunrise", round(haSunR,6))
@@ -136,7 +157,6 @@ if runmode == 'd': print("True Solar Time (minutes)", round(tst,6))
 
 hourAngle = hour_angle(tst)
 if runmode == 'd': print("hourAngle=", round(hourAngle,6))
-
 
 if tz_city == 2:
     solarNoon = solar_noon(longitude, jc, tz_offset)
