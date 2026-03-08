@@ -13,19 +13,19 @@ print(black_bg, white_text, clear_screen + "Welcome to the Python Solar Calculat
 runmode = 'r'
 t=''
 
-for j in range(0,8):
+for j in range(0, len(suncities)):
     t += suncities[j]['cityNumber'] + '. ' + suncities[j]['cityName']
-    t+= ', '
-    if j == 6: t += '\n'
+    if j == 5 or j == 8: t+= '\n '
+    else: t += ', '
 
+t += "99. Enter values of your own"
 
 print(t)
 
-
-cNr =  input("City number (1 - 8): ") or "1"
+cNr =  input(f"City number (1 - {len(suncities)}): ") or "1"
 cNr = int(cNr) - 1
 
-if -1 < cNr < 8:
+if -1 < cNr < len(suncities):
     latitude = suncities[cNr]['latitude']
     longitude = suncities[cNr]['longitude']
     longitude = float(longitude)
@@ -33,7 +33,7 @@ if -1 < cNr < 8:
     tz_city = suncities[cNr]['tz_city']
     cityName = suncities[cNr]['cityName']
     cityNumber = cNr + 1
-elif cNr == 8:
+elif cNr == 98:
     longitude = input("Enter your longitude in degrees (east +, west -): ") or 24.9
     longitude = float(longitude)
     latitude = input("Enter your latitude in degrees (north +, south -): ") or 60.2
@@ -47,6 +47,10 @@ else:
     cNr = 0
     print("Using location", suncities[0]['cityName'])
 
+dlsHour = input("Y = Day Light Saving (+ 1 hour): ")
+dlhour = 0
+if dlsHour.upper() == 'Y': dlhour = 1.0
+dlhour = float(dlhour)
 
 d = datetime.datetime.now()
 if runmode == 'd': print("Current local time", d.strftime("%Y-%m-%d %H:%M:%S"))
@@ -83,6 +87,9 @@ utc_hours = int(day_seconds // 3600)
 if runmode == 'd': print("Hours of current UTC time", utc_hours)
 
 cet_hours = utc_hours + 1
+est_hours = utc_hours - 5
+edt_hours = utc_hours - 4
+
 tz_offset = time.timezone / 3600
 # NEW: Show the sign (+/-) of timezone offset correctly
 # Note, the sign is inverted when showing UTC offset
@@ -94,6 +101,7 @@ elif tz_offset == 0: tz_sign = ' '
 else :
     tz_sign = '+'
 
+est_sign = '-'
 
 if runmode == 'd': print(f"Timezone Offset {tz_offset} hours from UTC")
 
@@ -102,7 +110,6 @@ x = datetime.datetime(y, m, d_, hr, mn, sc)
 tloc = hr + mn / 60 + sc / 3600 # Local time in hours decimal
 
 # UTC Time
-print("debug utc_hours",utc_hours)
 
 if utc_hours >=  22:
     d_ -= 1
@@ -115,9 +122,10 @@ if cet_hours > 23:
     cet_hours -= 24
     d_ += 1
 
-print('debug cet_hours =',cet_hours)
 ut = datetime.datetime(y, m, d_, utc_hours, mn, sc) # UTC time
 et = datetime.datetime(y, m, d_, cet_hours, mn, sc) # CET time
+est = datetime.datetime(y, m, d_, est_hours, mn, sc) # EST time 
+edt = datetime.datetime(y, m, d_, edt_hours, mn, sc) # EDT time 
 
 jd_morning = jdn - 1.5 + (hr + tz_offset) / 24 + mn / 60 / 24 + sc / 3600 / 24
 jd_morning += 1.0 
@@ -139,14 +147,19 @@ jc = julian_century(jd_selected)
 
 sd = sun_declination(jc)
 cet_offset = -1
-print(" Local time:", x.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {tz_sign}{abs(tz_offset)} h")
-print(" CET time:  ", et.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {tz_sign}{abs(cet_offset)} h")
+est_offset = 5
+edt_offset = 4
+
+print(" Local time:", x.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {tz_sign} {abs(tz_offset)} h")
+print(" CET time:  ", et.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {tz_sign} {abs(cet_offset)} h")
 print(" UTC time:  ", ut.strftime("%A, %Y-%m-%d %H:%M:%S"))
+print(" EST time:  ", est.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {est_sign} {abs(est_offset)} h")
+print(" EDT time:  ", edt.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {est_sign} {abs(edt_offset)} h")
 
 if 0 <= cNr < 9:
-    print("index",cNr)
+    print()
     print(f"{cityName}: Latitude {latitude}°, Longitude {longitude}°")
-else: print("index out of range!", cNr)
+elif cNr != 98: print("index out of range!", cNr)
 
 haSunR = haSunrise(latitude, sd)
 if runmode == 'd': print("haSunrise", round(haSunR,6))
@@ -165,8 +178,10 @@ if tz_city == 2:
 
 if tz_city == 1:
     cet_offset = -1
-    print(yellow_text, "|    Central European normal time UTC + 1 h")
-    cetNoon   = solar_noon(longitude, jc, cet_offset)
+    print(yellow_text, "| ")
+    if dlhour == 0: print("    Central European normal time UTC + 1 h")
+    else: print("    Central European summer time UTC + 2 h")
+    cetNoon   = solar_noon(longitude, jc, cet_offset - dlhour)
     print(' |    Noon time        ', cetNoon[0])
 
 if tz_city == 0:
@@ -182,17 +197,31 @@ if tz_city == 2:
     print(" |    Sunset time      ", sunset_str)
 
 if tz_city == 1:
-    sunrise_cet = sun_time(cetNoon[1], haSunR, cet_offset)
+    sunrise_cet = sun_time(cetNoon[1], haSunR, cet_offset - dlhour)
     print(" |    Sunrise time     ", sunrise_cet)
-    sunset_cet = sun_time(cetNoon[1], -haSunR, cet_offset)
+    sunset_cet = sun_time(cetNoon[1], -haSunR, cet_offset - dlhour)
     print(" |    Sunset time      ", sunset_cet)
 
 
 if tz_city == 0:
-    sunrise_utc = sun_time(utNoon[1], haSunR, utc_offset)
+    sunrise_utc = sun_time(utNoon[1], haSunR, utc_offset - dlhour)
     print(" |    Sunrise time     ", sunrise_utc)
-    sunset_utc = sun_time(utNoon[1], -haSunR, utc_offset)
-    print(" |    Sunset time      ", sunset_utc) 
+    sunset_utc = sun_time(utNoon[1], -haSunR, utc_offset - dlhour)
+    print(" |    Sunset time      ", sunset_utc)
+
+if tz_city == -5:
+    estNoon    = solar_noon(longitude, jc, est_offset - dlhour)
+    print(yellow_text)
+    if dlhour == 0:
+        print(" |    Eastern standard time EST, UTC - 05:00")
+    elif dlhour == 1.0:
+        print(" |    Eastern Day Light time EDT, UTC - 04:00")
+
+    print(' |    Noon time        ', estNoon[0])
+    sunrise_est = sun_time(estNoon[1], haSunR, est_offset - dlhour)
+    print(" |    Sunrise time     ", sunrise_est)
+    sunset_est = sun_time(estNoon[1], -haSunR, est_offset - dlhour)
+    print(" |    Sunset time      ", sunset_est) 
 
 
 dayLength = 2 * haSunR / 15 # in decimal hours

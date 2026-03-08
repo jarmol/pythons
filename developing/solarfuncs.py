@@ -105,8 +105,10 @@ def solar_noon(longitude, jc, tzoffs):
     noon_hours = int(noon_as_minutes) // 60
     noon_minutes = int(noon_as_minutes) % 60
     noon_seconds = int((60*noon_as_minutes) % 60)
+    if tzoffs > 0: tz_sign = ' - '
+    else: tz_sign = ' + ' 
     xt = datetime.datetime(y, m, d_, noon_hours, noon_minutes, noon_seconds) # noon time
-    solarNoon = xt.strftime("%A, %Y-%m-%d %H:%M:%S" + f" Timezone UTC {tz_sign}{abs(tzoffs)}")
+    solarNoon = xt.strftime("%A, %Y-%m-%d %H:%M:%S" + f" Timezone UTC {tz_sign}0{abs(int(tzoffs))}:00")
     return [solarNoon, day_fraction]
 
 def hour_angle(tcurrent):
@@ -141,8 +143,10 @@ def sun_time(dayf, haSunR, tz_offset):
     sunHours = int(sunH)
     sMinutes = int(sunMinutes) % 60
     sunSeconds = int(60 * sunMinutes % 60)
+    tz_sign = ' + '
     xt = datetime.datetime(y, m, d_, sunHours, sMinutes, sunSeconds)
-    suntime_eet = xt.strftime("%A, %Y-%m-%d %H:%M:%S" + f" Timezone UTC {tz_sign}{abs(tz_offset)}") 
+    if tz_offset > 0: tz_sign = ' - '
+    suntime_eet = xt.strftime("%A, %Y-%m-%d %H:%M:%S" + f" Timezone UTC {tz_sign}0{abs(int(tz_offset))}:00") 
     return suntime_eet
 
 """
