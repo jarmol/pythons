@@ -5,6 +5,7 @@ from solarfuncs import *
 
 black_bg = "\033[40m"
 white_text = "\033[97m"
+cyan_text = "\033[96m"
 green_text = "\033[92m"
 yellow_text = "\033[93m"
 clear_screen = "\033[2J"
@@ -47,7 +48,8 @@ else:
     cNr = 0
     print("Using location", suncities[0]['cityName'])
 
-dlsHour = input("Y = Day Light Saving (+ 1 hour): ")
+dlsHour = "NO DLS"
+if cityNumber != 10: dlsHour = input("Y = Day Light Saving (+ 1 hour): ") # no DLS in Japan
 dlhour = 0
 if dlsHour.upper() == 'Y': dlhour = 1.0
 dlhour = float(dlhour)
@@ -156,8 +158,8 @@ print(" UTC time:  ", ut.strftime("%A, %Y-%m-%d %H:%M:%S"))
 print(" EST time:  ", est.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {est_sign} {abs(est_offset)} h")
 print(" EDT time:  ", edt.strftime("%A, %Y-%m-%d %H:%M:%S"), f"Timezone UTC {est_sign} {abs(edt_offset)} h")
 
-if 0 <= cNr < 9:
-    print()
+if 0 <= cNr < len(suncities):
+    print(cyan_text)
     print(f"{cityName}: Latitude {latitude}°, Longitude {longitude}°")
 elif cNr != 98: print("index out of range!", cNr)
 
@@ -178,9 +180,9 @@ if tz_city == 2:
 
 if tz_city == 1:
     cet_offset = -1
-    print(yellow_text, "| ")
-    if dlhour == 0: print("    Central European normal time UTC + 1 h")
-    else: print("    Central European summer time UTC + 2 h")
+    print(yellow_text)
+    if dlhour == 0: print(" |  Central European normal time UTC + 1 h")
+    else: print(" |   Central European summer time UTC + 2 h")
     cetNoon   = solar_noon(longitude, jc, cet_offset - dlhour)
     print(' |    Noon time        ', cetNoon[0])
 
@@ -223,6 +225,16 @@ if tz_city == -5:
     sunset_est = sun_time(estNoon[1], -haSunR, est_offset - dlhour)
     print(" |    Sunset time      ", sunset_est) 
 
+if tz_city == 9:
+    jpn_offset = -9
+    jpnNoon = solar_noon(longitude, jc, jpn_offset)
+    print(yellow_text)
+    print(" |    Japan standard time JST, UTC + 09:00")
+    print(' |    Noon time        ', jpnNoon[0]) 
+    sunrise_jpn = sun_time(jpnNoon[1], haSunR, jpn_offset)
+    print(" |    Sunrise time     ", sunrise_jpn)
+    sunset_jpn = sun_time(jpnNoon[1], -haSunR, jpn_offset)
+    print(" |    Sunset time      ", sunset_jpn)
 
 dayLength = 2 * haSunR / 15 # in decimal hours
 if runmode == 'd': print("Daylength (hours)     ", round(dayLength,4))
@@ -247,9 +259,3 @@ print(" Julian Date (JD) for current time and date", round(jd_selected,6))
 print(" Julian Century JC", round(jc,8))
 print(f" Sun declination   {round(sd,6)}°")
 print(f" Approx. atmospheric refraction {round(refract,5)}°")
-
-"""
-This is now OK as I changed it more functional: used only input variables, no global variables 
-direct calls. That is just the way to avoid hidden errors, if the variables are afterwards
-changed globally.
-"""
