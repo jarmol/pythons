@@ -123,10 +123,11 @@ def hour_angle(tcurrent):
 d = datetime.datetime.now()
 y, m, d_ = d.year, d.month, d.day
 hr,mn,sc = d.hour, d.minute, d.second
+tz_offset = time.timezone / 3600
+
 """
 tz_sign = ''
 
-tz_offset = time.timezone / 3600
 
 if tz_offset > 0:
     tz_sign = '-'
@@ -153,7 +154,7 @@ def sun_time(dayf, haSunR, tz_info):
     if sunHours > 23:
        xt = datetime.datetime(y, m, (d_ + 1), (sunHours - 24), sMinutes, sunSeconds)
     elif sunHours < 0:
-        xt = datetime.datetime(y, m, (d_ - 1), (sunHours + 23), sMinutes, sunSeconds) 
+        xt = datetime.datetime(y, m, d_, (sunHours + 23), sMinutes, sunSeconds) 
     else:
         xt = datetime.datetime(y, m, d_, sunHours, sMinutes, sunSeconds) 
     tz = pytz.timezone('utc')
@@ -221,3 +222,19 @@ def solar_azimuth(ha, sza, sd, lat):
     else:
         saz = 360.0 - az_deg
     return saz
+
+def calcAzimuth(hourAngle, zenith, sunDeclin, latit):
+    radZenith = rad(zenith)
+    radLatit = rad(latit)
+    radS = rad(sunDeclin)
+        
+    numerator = sin(radLatit) * cos(radZenith) - sin(radS)
+    denominator = cos(radLatit) * sin(radZenith)
+        
+    acosValue = acos(numerator / denominator)
+    degreesValue = acosValue * 180 / pi
+    if hourAngle > 0:
+       return (degreesValue + 180) % 360
+    else:
+       return (540 - degreesValue) % 360
+    
