@@ -1,41 +1,42 @@
 from math import pi, sin, cos, asin, acos, tan
 import datetime, time, pytz
+from datetime import datetime, timedelta
 
-def rad(x):
+def rad(x: float) -> float:
     return(pi * x / 180.0)
 
-def deg(x):
+def deg(x: float) -> float:
     return(180.0 * x / pi)
 
 deg2rad = pi / 180.0
 
-def geom_mean_long_sun(jc):
+def geom_mean_long_sun(jc: float) -> float:
     gmls = 280.46646 + jc * (36000.76983 + jc * 0.0003032)
     # More elegant way to keep angle within 0-360 degrees
     gmls = gmls % 360.0
     return gmls
 
 
-def geom_mean_anom_sun(jc):
+def geom_mean_anom_sun(jc: float) -> float:
     gmas = 357.52911 + jc * (35999.05029 - 0.0001537 * jc)
     return (gmas % 360.0)
 
-def eccent_earth_orbit(jc):
+def eccent_earth_orbit(jc: float) -> float:
     eoe = 0.016708634 - jc * (0.000042037 + 0.0000001267 * jc)
     return eoe
 
-def mean_obliq_ecliptic(jc):
+def mean_obliq_ecliptic(jc: float) -> float:
     moe = 23.0 + (26.0 + ((21.448 - jc * (46.815 \
      + jc * (0.00059 - jc * 0.001813)))) / 60.0) / 60.0
     return moe
 
-def obliq_corr(jc):
+def obliq_corr(jc: float) -> float:
     omega = 125.04 - 1934.136 * jc
     moe = mean_obliq_ecliptic(jc)
     oc = moe + 0.00256 * cos(omega * deg2rad)
     return oc
 
-def sun_eq_of_center(jc):
+def sun_eq_of_center(jc: float) -> float:
     gmas = geom_mean_anom_sun(jc) 
     gmas_rad = deg2rad*gmas
     sec = (sin(gmas_rad) * (1.914602 - jc * (0.004817 + 0.000014 * jc)) +
@@ -85,7 +86,7 @@ def haSunrise(latitude, sd):
     return haS
 
 
-def true_solar_time(longitude, hr, mn, sc, tz_offset, jc):
+def true_solar_time(longitude: float, hr: int, mn: int, sc: int, tz_offset: float, jc: float) -> float:
     # Calculate the True Solar Time (in minutes)
     # time_in_minutes: local time in minutes (0..1440)
     time_in_minutes = hr * 60 + mn + sc / 60
@@ -98,21 +99,19 @@ def true_solar_time(longitude, hr, mn, sc, tz_offset, jc):
     return tst
     # If tst < 0 then tst = tst + 1440
 
-def solar_noon(longitude, jc, tz_info):
+def solar_noon(longitude: float, jc: float, tz_info: str) -> list[str, float, datetime]:
     eot = equation_of_time(jc)
-    day_fraction = (720 - 4 * longitude - eot) / 1440
     noon_as_minutes = 720 - 4 * longitude - eot
-    noon_hours = int(noon_as_minutes) // 60
-    noon_minutes = int(noon_as_minutes) % 60
-    noon_seconds = int((60*noon_as_minutes) % 60)
-    xt = datetime.datetime(y, m, d_, noon_hours, noon_minutes, noon_seconds) # noon time
+    noon_as_seconds = int(noon_as_minutes * 60)
+    day_fraction: float = noon_as_minutes / 1440
+    xt = datetime(y, m, d_, 0, 0, 0) + timedelta(seconds=noon_as_seconds)
     tz = pytz.timezone('utc')
     xt = tz.localize(xt)
     new_tz = pytz.timezone(tz_info)
 
 # Changing the timezone of our object
-    solar_noon = xt.astimezone(new_tz).strftime("%A, %Y-%m-%d %T %Z")
-    return [solar_noon, day_fraction]
+    solarNoon = xt.astimezone(new_tz).strftime("%A, %Y-%m-%d %T %Z")
+    return [solarNoon, day_fraction, xt]
 
 def hour_angle(tcurrent):
     ha = (tcurrent / 4.0) - 180.0
@@ -120,7 +119,7 @@ def hour_angle(tcurrent):
         ha += 360.0
     return ha
 
-d = datetime.datetime.now()
+d = datetime.now()
 y, m, d_ = d.year, d.month, d.day
 hr,mn,sc = d.hour, d.minute, d.second
 tz_offset = time.timezone / 3600
@@ -136,36 +135,28 @@ else :
     tz_sign = '+'
 """
 
-def sunrise_time(df, haSunR):
-    srt = df - 4 *  haSunR / 1440
-    return srt
 
-
-def sun_time(dayf, haSunR, tz_info):
-    sunT = sunrise_time(dayf, haSunR)
+def sun_time(dayf: float, haSunR: float, tz_info: str) -> str:
+    sunT = dayf - 4 *  haSunR / 1440
     sunH = 24 * sunT
     sunMinutes = 60 * sunH
     sunHours = int(sunH)
- #   if sunHours >23:
- #       sunHours -= 24
-  
     sMinutes = int(sunMinutes) % 60
+    if sunMinutes < 0: sMinutes -= 1 # neg times correction
     sunSeconds = int(60 * sunMinutes % 60)
     if sunHours > 23:
-       xt = datetime.datetime(y, m, (d_ + 1), (sunHours - 24), sMinutes, sunSeconds)
+       xt = datetime(y, m, (d_ + 1), (sunHours - 24), sMinutes, sunSeconds)
     elif sunHours < 0:
-        xt = datetime.datetime(y, m, d_, (sunHours + 23), sMinutes, sunSeconds) 
+        xt = datetime(y, m, (d_ - 1), (sunHours + 23), sMinutes, sunSeconds) 
     else:
-        xt = datetime.datetime(y, m, d_, sunHours, sMinutes, sunSeconds) 
+        xt = datetime(y, m, d_, sunHours, sMinutes, sunSeconds) 
     tz = pytz.timezone('utc')
     xt = tz.localize(xt)
     new_tz = pytz.timezone(tz_info)
 
 # Changing the timezone of our object
-    suntime_eet = xt.astimezone(new_tz).strftime("%A, %Y-%m-%d %T %Z")
-#   suntime_eet = xt.strftime("%A, %Y-%m-%d %H:%M:%S") 
-    return suntime_eet
-
+    suntime_new = xt.astimezone(new_tz).strftime("%A, %Y-%m-%d %T %Z")
+    return suntime_new
 
     
 # Three categories of elevations angle: < 0, < 5, < 85
@@ -173,15 +164,15 @@ def sun_time(dayf, haSunR, tz_info):
 def belowZero(hx):
         return -20.774 / tan(rad(hx)) / 3600.0
     
-def belowEightyFive(hx):
+def belowEightyFive(hx: float) -> float:
         v1 = tan(rad(hx))
-        v2 = pow(tan(rad(hx)), 3.0)
-        v3 = pow(tan(rad(hx)), 5.0)
+        v2: float = pow(tan(rad(hx)), 3.0)
+        v3: float = pow(tan(rad(hx)), 5.0)
         v = ((58.1 / v1) - (0.07 / v2) + (8.6e-5 / v3)) / 3600.0
         return v
     
-def belowFive(hx):
-        v = (1735.0 - 518.2 * hx + 103.4 * pow(hx, 2.0) \
+def belowFive(hx: float) -> float:
+        v: float = (1735.0 - 518.2 * hx + 103.4 * pow(hx, 2.0) \
            - 12.79 * pow(hx, 3.0) + 0.711 * pow(hx, 4.0)) / 3600.0
         return v
     
@@ -189,7 +180,7 @@ def belowFive(hx):
 # h = solar elevation (degrees)
 # res = result of calculation
 
-def atmosRefract(h):
+def atmosRefract(h: float) -> float:
     res = -999
 
     if h < -0.575:
@@ -210,7 +201,7 @@ def solar_zenith_angle(ha, lat, sd):
     return sza
 
 
-def solar_azimuth(ha, sza, sd, lat):
+def solar_azimuth(ha: float, sza: float, sd: float, lat: float) -> float:
     saz = 0.0
     sin_az = (cos(rad(sd)) * sin(rad(ha))) / sin(rad(sza))
     cos_az = ( (sin(rad(sd)) - sin(rad(lat)) * cos(rad(sza))) /
