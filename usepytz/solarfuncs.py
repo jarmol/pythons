@@ -135,29 +135,6 @@ else :
     tz_sign = '+'
 """
 
-
-def sun_time(dayf: float, haSunR: float, tz_info: str) -> str:
-    sunT = dayf - 4 *  haSunR / 1440
-    sunH = 24 * sunT
-    sunMinutes = 60 * sunH
-    sunHours = int(sunH)
-    sMinutes = int(sunMinutes) % 60
-    if sunMinutes < 0: sMinutes -= 1 # neg times correction
-    sunSeconds = int(60 * sunMinutes % 60)
-    if sunHours > 23:
-       xt = datetime(y, m, (d_ + 1), (sunHours - 24), sMinutes, sunSeconds)
-    elif sunHours < 0:
-        xt = datetime(y, m, (d_ - 1), (sunHours + 23), sMinutes, sunSeconds) 
-    else:
-        xt = datetime(y, m, d_, sunHours, sMinutes, sunSeconds) 
-    tz = pytz.timezone('utc')
-    xt = tz.localize(xt)
-    new_tz = pytz.timezone(tz_info)
-
-# Changing the timezone of our object
-    suntime_new = xt.astimezone(new_tz).strftime("%A, %Y-%m-%d %T %Z")
-    return suntime_new
-
     
 # Three categories of elevations angle: < 0, < 5, < 85
 # used for refraction angles
