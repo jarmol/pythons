@@ -23,7 +23,7 @@ t=''
 
 for j in range(0, len(suncities)):
     t += suncities[j]['cityNumber'] + '. ' + suncities[j]['cityName']
-    if j == 5 or j == 9: t += '\n'
+    if j == 4 or j == 9 or j == 14: t += '\n'
     else: t += ', '
 
 t += "99. Enter values of your own"
@@ -146,14 +146,15 @@ try:
         print(yellow_text)
         print(" |    Sunrise time     ", sunriseTime.strftime(tform))
         print(' |    Noon time        ', solarNoon[0])
-        print(" |    Sunset time      ", sunsetTime.astimezone(pytz.timezone(tz_info)).strftime(tform))
+        print(" |    Sunset time      ", sunsetTime.strftime(tform))
 except NameError as e: print('Exception:', e)
 
 dayLength = 2 * haSunR / 15 # in decimal hours
-dlhr = int(dayLength)
-dlmn = int((dayLength - dlhr) * 60)
-dlsc = (dayLength - dlhr - dlmn / 60) * 3600
-print(f" |    Daylength         {dlhr} h {dlmn} min {round(dlsc)} sec")
+
+d = datetime.now(pytz.timezone(tz_info))
+day_asSeconds = dayLength * 3600
+day_asHMS = datetime(d.year, d.month, d.day,0,0,0) + timedelta(seconds = day_asSeconds)
+print(" |    Daylength        ", day_asHMS.strftime("%H h %M min %S sec"))
 
 try:
     sza = solar_zenith_angle(hourAngle, latitude, sd)
