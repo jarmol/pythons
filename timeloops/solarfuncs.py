@@ -1,0 +1,207 @@
+from math import pi, sin, cos, asin, acos, tan
+import datetime, time, pytz
+from datetime import datetime, timedelta
+
+def rad(x: float) -> float:
+    return(pi * x / 180.0)
+
+def deg(x: float) -> float:
+    return(180.0 * x / pi)
+
+deg2rad = pi / 180.0
+
+def geom_mean_long_sun(jc: float) -> float:
+    gmls = 280.46646 + jc * (36000.76983 + jc * 0.0003032)
+    # More elegant way to keep angle within 0-360 degrees
+    gmls = gmls % 360.0
+    return gmls
+
+
+def geom_mean_anom_sun(jc: float) -> float:
+    gmas = 357.52911 + jc * (35999.05029 - 0.0001537 * jc)
+    return (gmas % 360.0)
+
+def eccent_earth_orbit(jc: float) -> float:
+    eoe = 0.016708634 - jc * (0.000042037 + 0.0000001267 * jc)
+    return eoe
+
+def mean_obliq_ecliptic(jc: float) -> float:
+    moe = 23.0 + (26.0 + ((21.448 - jc * (46.815 \
+     + jc * (0.00059 - jc * 0.001813)))) / 60.0) / 60.0
+    return moe
+
+def obliq_corr(jc: float) -> float:
+    omega = 125.04 - 1934.136 * jc
+    moe = mean_obliq_ecliptic(jc)
+    oc = moe + 0.00256 * cos(omega * deg2rad)
+    return oc
+
+def sun_eq_of_center(jc: float) -> float:
+    gmas = geom_mean_anom_sun(jc) 
+    gmas_rad = deg2rad*gmas
+    sec = (sin(gmas_rad) * (1.914602 - jc * (0.004817 + 0.000014 * jc)) +
+           sin(2 * gmas_rad) * (0.019993 - 0.000101 * jc) +
+           sin(3 * gmas_rad) * 0.000289)
+    return sec
+
+def sun_true_long(jc):
+    gmls = geom_mean_long_sun(jc)
+    sec = sun_eq_of_center(jc)
+    stl = gmls + sec
+    return (stl % 360.0)
+
+def sun_app_long(jc, stl):
+    omega = 125.04 - 1934.136 * jc
+    sal = stl - 0.00569 - 0.00478 * sin(omega * deg2rad)
+    return sal
+
+def sun_declination(jc):
+    oc = obliq_corr(jc)
+    stl = sun_true_long(jc)
+    sal = sun_app_long(jc, stl)
+    sd = deg(asin(sin(rad(oc))*sin(rad(sal))))
+    return sd
+
+def y_variable(jc):
+    # Calculate the Y variable for the equation of time
+    #moe = mean_obliq_ecliptic(jc)
+    oc = obliq_corr(jc)
+    y = tan(rad(oc) / 2.0) * tan(rad(oc) / 2.0)
+    return y
+
+def equation_of_time(jc):
+    gmls = geom_mean_long_sun(jc)
+    eoe = eccent_earth_orbit(jc)
+    gmas = geom_mean_anom_sun(jc)
+    y = y_variable(jc)
+    eot = y * sin(2 * rad(gmls)) - 2 * eoe * sin(rad(gmas)) \
+            + 4 * eoe * y * sin(rad(gmas)) * cos(2 * rad(gmls)) \
+            - 0.5 * y * y * sin(4 * rad(gmls)) - 1.25 * eoe * eoe * sin(2 * rad(gmas))
+
+    eot = deg(eot) * 4.0  # Convert to minutes
+    return eot
+
+def haSunrise(latitude, sd):
+    haS = deg(acos(cos(rad(90.833)) / (cos(rad(latitude)) * cos(rad(sd))) - tan(rad(latitude)) * tan(rad(sd))))
+    return haS
+
+
+def true_solar_time(longitude: float, hr: int, mn: int, sc: int, tz_offset: float, jc: float) -> float:
+    # Calculate the True Solar Time (in minutes)
+    # time_in_minutes: local time in minutes (0..1440)
+    time_in_minutes = hr * 60 + mn + sc / 60
+    # tz_offset from time.timezone is seconds west of UTC -> hours west of UTC
+    # spreadsheet/timezone convention: positive for east of Greenwich
+    tz = -tz_offset
+    eot = equation_of_time(jc)
+    # Apply equation of time (minutes) and longitude/timezone offsets
+    tst = (time_in_minutes + eot + 4 * longitude - 60 * tz) % 1440
+    return tst
+    # If tst < 0 then tst = tst + 1440
+
+def solar_noon(longitude: float, jc: float, tz_info: str, y, m, d) -> list[str, float, datetime]:
+    eot = equation_of_time(jc)
+    noon_as_minutes = 720 - 4 * longitude - eot
+    noon_as_seconds = int(noon_as_minutes * 60)
+    day_fraction: float = noon_as_minutes / 1440
+#   y, m, d_ = 2026, 5, 1
+    xt = datetime(y, m, d, 0, 0, 0) + timedelta(seconds=noon_as_seconds)
+    tz = pytz.timezone('utc')
+    xt = tz.localize(xt)
+    new_tz = pytz.timezone(tz_info)
+# Changing the timezone of our object
+    solarNoon = xt.astimezone(new_tz).strftime("%A  %Y-%m-%d %T %Z")
+    return [solarNoon, day_fraction, xt]
+
+def hour_angle(tcurrent):
+    ha = (tcurrent / 4.0) - 180.0
+    if ha < -180.0:
+        ha += 360.0
+    return ha
+"""
+d = datetime.now()
+y, m, d_ = d.year, d.month, d.day
+hr,mn,sc = d.hour, d.minute, d.second
+tz_offset = time.timezone / 3600
+
+tz_sign = ''
+
+
+if tz_offset > 0:
+    tz_sign = '-'
+elif tz_offset == 0: tz_sign = ' '
+else :
+    tz_sign = '+'
+"""
+
+    
+# Three categories of elevations angle: < 0, < 5, < 85
+# used for refraction angles
+def belowZero(hx):
+        return -20.774 / tan(rad(hx)) / 3600.0
+    
+def belowEightyFive(hx: float) -> float:
+        v1 = tan(rad(hx))
+        v2: float = pow(tan(rad(hx)), 3.0)
+        v3: float = pow(tan(rad(hx)), 5.0)
+        v = ((58.1 / v1) - (0.07 / v2) + (8.6e-5 / v3)) / 3600.0
+        return v
+    
+def belowFive(hx: float) -> float:
+        v: float = (1735.0 - 518.2 * hx + 103.4 * pow(hx, 2.0) \
+           - 12.79 * pow(hx, 3.0) + 0.711 * pow(hx, 4.0)) / 3600.0
+        return v
+    
+# Calculation of atmospheric refraction correction angle
+# h = solar elevation (degrees)
+# res = result of calculation
+
+def atmosRefract(h: float) -> float:
+    res = -999
+
+    if h < -0.575:
+        res = belowZero(h)
+    elif h <= 5.0:
+        res = belowFive(h)
+    elif h <= 85.0:
+        res = belowEightyFive(h)
+    else:
+        res = 0.0 
+        
+    return res
+
+def solar_zenith_angle(ha, lat, sd):
+    sins = sin(rad(lat)) * sin(rad(sd))
+    coss = cos(rad(lat)) * cos(rad(sd)) * cos(rad(ha))
+    sza = deg(acos(sins + coss))
+    return sza
+
+
+def solar_azimuth(ha: float, sza: float, sd: float, lat: float) -> float:
+    saz = 0.0
+    sin_az = (cos(rad(sd)) * sin(rad(ha))) / sin(rad(sza))
+    cos_az = ( (sin(rad(sd)) - sin(rad(lat)) * cos(rad(sza))) /
+               (cos(rad(lat)) * sin(rad(sza))) )
+    az_rad = acos(cos_az)
+    az_deg = deg(az_rad)
+    if sin_az < 0:
+        saz = az_deg
+    else:
+        saz = 360.0 - az_deg
+    return saz
+
+def calcAzimuth(hourAngle, zenith, sunDeclin, latit):
+    radZenith = rad(zenith)
+    radLatit = rad(latit)
+    radS = rad(sunDeclin)
+        
+    numerator = sin(radLatit) * cos(radZenith) - sin(radS)
+    denominator = cos(radLatit) * sin(radZenith)
+        
+    acosValue = acos(numerator / denominator)
+    degreesValue = acosValue * 180 / pi
+    if hourAngle > 0:
+       return (degreesValue + 180) % 360
+    else:
+       return (540 - degreesValue) % 360
+    
