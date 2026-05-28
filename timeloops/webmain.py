@@ -7,6 +7,7 @@ from solarfuncs import *
 import pytz
 
 # Creating the list of cities available as the string t for output
+# https://blog.finxter.com/generating-html-documents-in-python/
 
 t=''
 
@@ -16,12 +17,18 @@ for j in range(0, len(suncities)):
     else: t += ', '
 
 t += "99. Enter values of your own"
-print("""
-    <html>
-    <head><title>Solar Calculator</title></head>
-    <body style=\"background-color: black; color: greenyellow; font-family: Helvetica;\">"
-    """)
-print('<!-- ')
+
+file_html = open("results.html", "w")
+
+mylist = []
+append = mylist.append
+append("<html>\n")
+append("<meta charset=\'utf-8\'>\n")
+append("<head>\n")
+append("<title>Solar Calculator</title>\n")
+append("</head>\n")
+append("<body style=\"background-color: black; color: greenyellow; font-family: Helvetica;\">\n")
+
 
 print(t)
 cityNr =  input(f"City number : ") or "1"
@@ -62,7 +69,9 @@ print("Today", default_datestr)
 i_date_time = input("Enter date e.g. " + default_datestr) or default_datestr
 i_time = input("Enter time e.g. " + current_timestr + '  ') or current_timestr
 delta_hours = input("Step hours (default 1): ") or "1"
+n_rows = input("Number of rows to calculate (default 6): ") or "6"
 delta_hours = int(delta_hours)
+n_rows = int(n_rows)
 ls_date = i_date_time.split('-')
 ls_time = i_time.split(':')
 
@@ -90,12 +99,10 @@ dutc = dt_foreign.astimezone(pytz.utc) # utc
 print("Localized to foreign timezone", dt_foreign.strftime(strfmt))
 print("Naive date and time = ", d)
 print("The same as UTC time ", dutc.strftime('%T %Z'))
-print("-->")
 
 start_foreign = dt_foreign
 
-
-for i in range(1,7):
+for i in range(1, n_rows + 1):
 
     # compute the datetime for this row in the target timezone
     dt_step = start_foreign + timedelta(hours = (i-1) * delta_hours)
@@ -119,15 +126,20 @@ for i in range(1,7):
         localTime_str = dt_step.astimezone(pytz.timezone('Europe/Helsinki')).strftime(strfmt)
         tz_id = localTime_str[-4:]
         summer = 1 if tz_id in ['EEST', 'CEST', 'EDT'] else 0
-        print("<ul>") 
-        print("<li>Calculation times for " + cityName + ": </li>")
-        print(f"<li>Local time:  {localTime_str} (summer = {summer}) </li>")
-        print("<li>UTC time:   ", dutc.strftime(strfmt), "</li></ul>")
-        print("<p>Time zone info: " + tz_info)
-        print("<p>Date and time in target timezone: " + dutc.astimezone(pytz.timezone(tz_info)).strftime(strfmt))
+        append("<ul>\n<li>Calculation times for ")
+        append(cityName)
+        append(": </li>\n")
+        append(f"<li>Local time:  {localTime_str} (summer = {summer}) </li>\n")
+        append(f"<li>UTC time:    {dutc.strftime(strfmt)} </li>\n</ul>\n")
+        append(f"<p>Time zone info:  {tz_info}")
+        append(f"<p>Date and time in target timezone:  {dutc.astimezone(pytz.timezone(tz_info)).strftime(strfmt)} \n")
+        append(f"<p>{cityName}: Latitude {latitude}°, Longitude {longitude}°\n")
+        append("<table style=\"color: yellow; border: 2px solid red; border-radius: 25px; font-family: courier new; font-size: 14px;\">\n")
+        append("<tr><td><pre>")
+        append("                                                          Elevation    Elevation   Solar     Solar</td></tr>")
+        append("<tr><td><pre>  Calculat.    Sun       Sun       Noon       Day         without      with        Azimuth   Declinat-</td></tr>")
+        append("<tr><td><pre>  Date Time    Rise      Set       Time       Length      refraction   refraction  Angle     ion Angle</td></tr>")
         
-        print(f"<p>{cityName}: Latitude {latitude}&deg;, Longitude {longitude}&deg;")
-
     if latitude + sun_declin > 89.166997:
         haSunR = 179.999
     else:
@@ -153,13 +165,8 @@ for i in range(1,7):
         day_asSeconds = dayLength * 3600
         day_asHMS = datetime(d.year, d.month, d.day, 0, 0, 0) + timedelta(seconds=day_asSeconds)
         bform = "%T"
-        oform = "%H:%M"
-        timei = dt_step.strftime(oform)
-        if i == 1:
-            print("<pre style=\"color: yellow; font-family: courier new; font-size: 14px;\">")
-            print(" | Calcul-                                       Elevation    Elevation   Solar      Solar")
-            print(" | ation                   Noon      Day         without      with        Azimuth    Declination")
-            print(" | Times Sunrise  Sunset   time      length      refraction   refraction  angle      angle")
+        dform = "%d.%m %H:%M" # without year because not space for it in the table
+        timei = dt_step.strftime(dform)
 
         out1 = sunriseTime.strftime(bform)
         out2 = sunsetTime.strftime(bform)
@@ -174,11 +181,17 @@ for i in range(1,7):
     
         refract = atmosRefract(90.0 - sol_zenith)
         cor_elev = 90.0 - sol_zenith + refract
-        out5 = f"   {Decimal(90.0 - sol_zenith).quantize(Decimal('1.000')):>7}&deg;     {Decimal(cor_elev).quantize(Decimal('1.000')):>7}&deg;"
-        out7 = f"   {Decimal(sol_azim).quantize(Decimal('1.000')):>8}&deg;   {round(sun_declin, 3)}&deg;"
-        print(" |", timei, out1, out2, out3, out4, out5, out7)
+        out5 = f" {Decimal(90.0 - sol_zenith).quantize(Decimal('1.000')):>7}°     {Decimal(cor_elev).quantize(Decimal('1.000')):>7}°"
+        out7 = f"  {Decimal(sol_azim).quantize(Decimal('1.000')):>8}°  {Decimal(sun_declin).quantize(Decimal('1.000')):>7}°"
+        append("<tr><td><pre>  " + timei + "  " + out1  + "  " + out2 + "  " + out3 + "  " + out4 + "  " + out5 + "  " + out7 + "</td></tr>")
     except NameError as e: print('Exception:', e)
 
-print("""</pre>
-</body>
-</html>""")
+
+append("""</table>\n
+       </pre>\n
+       <p>Calculations based on the formulas from NOAA and US Naval Observatory 
+       <br>Spreadsheets and Calculation Details. See <a href="https://gml.noaa.gov/grad/solcalc/calcdetails.html">N.O.</a>
+</body>\n
+</html>\n""")
+file_html.writelines(mylist)
+file_html.close()

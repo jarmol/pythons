@@ -1,36 +1,23 @@
-
-    <html>
-    <head><title>Solar Calculator</title></head>
-    <body style="background-color: black; color: greenyellow; font-family: Helvetica;">"
-    
-<!-- 
-1. Helsinki, 2. Tornio  FI, 3. Utsjoki FI, 4. Stockholm, 5. Berlin
-6. Paris, 7. Madrid, 8. London UK , 9. Reykjavik, 10. Las Palmas Spain
-11. New York  , 12. Detroit US, 13. Chicago US, 14. Los Angeles, 15. Anchorage Alaska
-16. Tokyo JPN , 17. Sydney AUS, 99. Enter values of your own
-City number : tz_info : America/New_York
-Today 2026-05-22 
-Enter date e.g. 2026-05-22 Enter time e.g. 16:30:33   Step hours (default 1): Localized to foreign timezone Friday, 2026-05-22 12:53:00 EDT
-Naive date and time =  2026-05-22 12:53:00
-The same as UTC time  16:53:00 UTC
--->
+<html>
+<meta charset='utf-8'>
+<head>
+<title>Solar Calculator</title>
+</head>
+<body style="background-color: black; color: greenyellow; font-family: Helvetica;">
 <ul>
-<li>Calculation times for New York  : </li>
-<li>Local time:  Friday, 2026-05-22 19:53:00 EEST (summer = 1) </li>
-<li>UTC time:    Friday, 2026-05-22 16:53:00 UTC </li></ul>
-<p>Time zone info: America/New_York
-<p>Date and time in target timezone: Friday, 2026-05-22 12:53:00 EDT
-<p>New York  : Latitude 40.71&deg;, Longitude -74.01&deg;
-<pre style="color: yellow; font-family: courier new; font-size: 14px;">
- | Calcul-                                       Elevation    Elevation   Solar      Solar
- | ation                   Noon      Day         without      with        Azimuth    Declination
- | Times Sunrise  Sunset   time      length      refraction   refraction  angle      angle
- | 12:53 05:32:45 20:12:42 12:52:44  14:39:56     69.774&deg;      69.780&deg;     180.172&deg;   20.484&deg;
- | 16:53 05:32:38 20:12:51 12:52:45  14:40:13     35.656&deg;      35.679&deg;     267.234&deg;   20.517&deg;
- | 20:53 05:32:31 20:13:00 12:52:46  14:40:29     -7.271&deg;      -7.226&deg;     305.211&deg;   20.549&deg;
- | 00:53 05:32:24 20:13:09 12:52:47  14:40:45    -28.709&deg;     -28.699&deg;       0.057&deg;   20.581&deg;
- | 04:53 05:32:17 20:13:18 12:52:48  14:41:01     -7.158&deg;      -7.112&deg;      54.821&deg;   20.612&deg;
- | 08:53 05:32:09 20:13:26 12:52:48  14:41:17     35.811&deg;      35.834&deg;      92.711&deg;   20.644&deg;
-</pre>
+<li>Calculation times for Helsinki: </li>
+<li>Local time:  Thursday, 2026-05-28 00:00:00 EEST (summer = 1) </li>
+<li>UTC time:    Wednesday, 2026-05-27 21:00:00 UTC </li>
+</ul>
+<p>Time zone info:  Europe/Helsinki<p>Date and time in target timezone:  Thursday, 2026-05-28 00:00:00 EEST 
+<p>Helsinki: Latitude 60.195627°, Longitude 24.938103°
+<table style="color: yellow; border: 2px solid red; border-radius: 25px; font-family: courier new; font-size: 14px;">
+<tr><td><pre>                                                          Elevation    Elevation   Solar     Solar</td></tr><tr><td><pre>  Calculat.    Sun       Sun       Noon       Day         without      with        Azimuth   Declinat-</td></tr><tr><td><pre>  Date Time    Rise      Set       Time       Length      refraction   refraction  Angle     ion Angle</td></tr><tr><td><pre>  28.05 00:00  04:14:36  22:20:19  13:17:28   18:05:43    -6.882°      -6.834°     341.880°   21.408°</td></tr><tr><td><pre>  28.05 02:00  04:14:27  22:20:30  13:17:29   18:06:02    -7.923°      -7.882°       9.983°   21.422°</td></tr><tr><td><pre>  28.05 04:00  04:14:18  22:20:39  13:17:29   18:06:20    -1.950°      -1.781°      37.332°   21.435°</td></tr><tr><td><pre>  28.05 06:00  04:14:10  22:20:49  13:17:30   18:06:39     9.429°       9.522°      62.880°   21.449°</td></tr><tr><td><pre>  28.05 08:00  04:14:00  22:20:59  13:17:30   18:06:58    23.750°      23.787°      87.933°   21.462°</td></tr><tr><td><pre>  28.05 10:00  04:13:52  22:21:09  13:17:31   18:07:17    38.228°      38.249°     115.948°   21.476°</td></tr><tr><td><pre>  28.05 12:00  04:13:44  22:21:19  13:17:32   18:07:35    48.950°      48.964°     151.948°   21.489°</td></tr><tr><td><pre>  28.05 14:00  04:13:34  22:21:29  13:17:32   18:07:54    50.587°      50.600°     195.658°   21.502°</td></tr><tr><td><pre>  28.05 16:00  04:13:26  22:21:39  13:17:33   18:08:13    42.011°      42.029°     234.588°   21.516°</td></tr><tr><td><pre>  28.05 18:00  04:13:18  22:21:49  13:17:34   18:08:31    28.161°      28.191°     264.427°   21.529°</td></tr><tr><td><pre>  28.05 20:00  04:13:08  22:21:59  13:17:34   18:08:50    13.505°      13.571°     289.905°   21.542°</td></tr><tr><td><pre>  28.05 22:00  04:13:00  22:22:09  13:17:35   18:09:08     1.028°       1.389°     315.069°   21.555°</td></tr><tr><td><pre>  29.05 00:00  04:12:52  22:22:19  13:17:36   18:09:27    -6.720°      -6.671°     341.878°   21.568°</td></tr></table>
+
+       </pre>
+
+       <p>Calculations based on the formulas from NOAA and US Naval Observatory 
+       <br>Spreadsheets and Calculation Details. See <a href="https://gml.noaa.gov/grad/solcalc/calcdetails.html">N.O.</a>
 </body>
+
 </html>
